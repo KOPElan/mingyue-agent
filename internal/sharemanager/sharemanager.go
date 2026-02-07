@@ -48,15 +48,15 @@ type Share struct {
 
 // Manager handles share management operations
 type Manager struct {
-	shares         map[string]*Share
-	allowedPaths   []string
-	sambaConfig    string
-	nfsConfig      string
-	backupDir      string
-	stateFile      string
-	mu             sync.RWMutex
+	shares          map[string]*Share
+	allowedPaths    []string
+	sambaConfig     string
+	nfsConfig       string
+	backupDir       string
+	stateFile       string
+	mu              sync.RWMutex
 	monitorInterval time.Duration
-	stopMonitor    chan struct{}
+	stopMonitor     chan struct{}
 }
 
 // Config represents share manager configuration

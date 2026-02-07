@@ -16,20 +16,20 @@ import (
 
 // Interface represents a network interface
 type Interface struct {
-	Name         string            `json:"name"`
-	MAC          string            `json:"mac"`
-	IPAddresses  []string          `json:"ip_addresses"`
-	State        string            `json:"state"`
-	Speed        int64             `json:"speed"`
-	MTU          int               `json:"mtu"`
-	RxBytes      uint64            `json:"rx_bytes"`
-	TxBytes      uint64            `json:"tx_bytes"`
-	RxPackets    uint64            `json:"rx_packets"`
-	TxPackets    uint64            `json:"tx_packets"`
-	RxErrors     uint64            `json:"rx_errors"`
-	TxErrors     uint64            `json:"tx_errors"`
-	Flags        []string          `json:"flags"`
-	LastUpdated  time.Time         `json:"last_updated"`
+	Name        string    `json:"name"`
+	MAC         string    `json:"mac"`
+	IPAddresses []string  `json:"ip_addresses"`
+	State       string    `json:"state"`
+	Speed       int64     `json:"speed"`
+	MTU         int       `json:"mtu"`
+	RxBytes     uint64    `json:"rx_bytes"`
+	TxBytes     uint64    `json:"tx_bytes"`
+	RxPackets   uint64    `json:"rx_packets"`
+	TxPackets   uint64    `json:"tx_packets"`
+	RxErrors    uint64    `json:"rx_errors"`
+	TxErrors    uint64    `json:"tx_errors"`
+	Flags       []string  `json:"flags"`
+	LastUpdated time.Time `json:"last_updated"`
 }
 
 // IPConfig represents IP configuration
@@ -54,11 +54,11 @@ type ConfigHistory struct {
 
 // PortInfo represents listening port information
 type PortInfo struct {
-	Port      int    `json:"port"`
-	Protocol  string `json:"protocol"`
-	Process   string `json:"process"`
-	State     string `json:"state"`
-	Address   string `json:"address"`
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
+	Process  string `json:"process"`
+	State    string `json:"state"`
+	Address  string `json:"address"`
 }
 
 // Manager handles network management operations

@@ -8,13 +8,13 @@ import (
 )
 
 type Config struct {
-	Server      ServerConfig      `yaml:"server"`
-	API         APIConfig         `yaml:"api"`
-	Audit       AuditConfig       `yaml:"audit"`
-	Security    SecurityConfig    `yaml:"security"`
-	NetDisk     NetDiskConfig     `yaml:"netdisk"`
-	Network     NetworkConfig     `yaml:"network"`
-	ShareMgr    ShareMgrConfig    `yaml:"sharemgr"`
+	Server   ServerConfig   `yaml:"server"`
+	API      APIConfig      `yaml:"api"`
+	Audit    AuditConfig    `yaml:"audit"`
+	Security SecurityConfig `yaml:"security"`
+	NetDisk  NetDiskConfig  `yaml:"netdisk"`
+	Network  NetworkConfig  `yaml:"network"`
+	ShareMgr ShareMgrConfig `yaml:"sharemgr"`
 }
 
 type ServerConfig struct {
