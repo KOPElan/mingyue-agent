@@ -82,12 +82,18 @@ create_directories() {
 install_binary() {
     log_info "Installing binary..."
 
-    if [[ ! -f "bin/mingyue-agent" ]]; then
-        log_error "Binary not found. Please run 'make build' first"
+    # Check for binary in multiple locations (release package or build directory)
+    if [[ -f "mingyue-agent" ]]; then
+        BINARY_PATH="mingyue-agent"
+    elif [[ -f "bin/mingyue-agent" ]]; then
+        BINARY_PATH="bin/mingyue-agent"
+    else
+        log_error "Binary not found. Expected 'mingyue-agent' or 'bin/mingyue-agent'"
+        log_error "Please ensure you are in the release package directory or run 'make build' first"
         exit 1
     fi
 
-    install -m 755 bin/mingyue-agent "$INSTALL_DIR/mingyue-agent"
+    install -m 755 "$BINARY_PATH" "$INSTALL_DIR/mingyue-agent"
     log_info "Binary installed to $INSTALL_DIR/mingyue-agent"
 }
 
