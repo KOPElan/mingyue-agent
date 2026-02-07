@@ -150,7 +150,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid grpc_port: %d", c.Server.GRPCPort)
 	}
 	if (c.API.TLSCert == "") != (c.API.TLSKey == "") {
-		return fmt.Errorf("tls_cert and tls_key must both be set")
+		return fmt.Errorf("tls_cert and tls_key must both be set or both be empty")
 	}
 	if c.API.EnableHTTP && c.API.TLSCert != "" {
 		if _, err := os.Stat(c.API.TLSCert); err != nil {

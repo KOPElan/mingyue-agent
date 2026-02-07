@@ -136,7 +136,10 @@ The daemon will run in the foreground and can be stopped with Ctrl+C (SIGINT) or
 }
 
 func resolveConfigPath(configFile string) string {
-	if configFile == "" || configFile != defaultConfigPath {
+	if configFile == "" {
+		return ""
+	}
+	if configFile != defaultConfigPath {
 		return configFile
 	}
 
