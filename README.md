@@ -22,13 +22,20 @@ Mingyue Agent is the core local management service for the Mingyue Portal home s
 - **Link Operations**: Symlink and hardlink creation
 - **Complete API**: 12 RESTful endpoints with comprehensive audit trail
 
+### 💾 Disk Management (Implemented)
+- **Partition Management**: Auto-detection, listing with detailed metadata (UUID, label, usage)
+- **Mount Operations**: Secure mount/unmount with whitelist-based access control
+- **SMART Monitoring**: Disk health status, temperature, power-on hours via smartctl
+- **Disk Information**: Physical disk detection, partition mapping, filesystem details
+- **Safety Features**: Allowed mount points whitelist, comprehensive audit logging
+
 ### 📊 Resource Monitoring (Implemented)
 - **System Metrics**: CPU (cores, load avg), memory (RAM/swap), disk usage, process stats
 - **Health Checks**: `/healthz` with degraded status on resource thresholds
 - **Monitoring APIs**: Detailed stats and health status endpoints
 
 ### 🔮 Planned Features
-- **Disk Management**: Partition detection, mount/unmount, SMART monitoring
+- **Network Disk Management**: CIFS/NFS mounting, credential encryption, auto-recovery
 - **Network Management**: Interface monitoring, IP configuration, traffic stats
 - **Share Management**: Samba/NFS share configuration and management
 - **Indexing & Thumbnails**: Media file indexing and thumbnail generation
@@ -185,6 +192,29 @@ curl "http://localhost:8080/api/v1/files/download?path=/tmp/file.txt" \
   -o downloaded.txt
 ```
 
+### Disk Management
+
+```bash
+# List all disks
+curl http://localhost:8080/api/v1/disk/list
+
+# List partitions
+curl http://localhost:8080/api/v1/disk/partitions
+
+# Get SMART info
+curl "http://localhost:8080/api/v1/disk/smart?device=/dev/sda"
+
+# Mount a device
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"device":"/dev/sdb1","mount_point":"/mnt/data","filesystem":"ext4"}' \
+  http://localhost:8080/api/v1/disk/mount
+
+# Unmount a device
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"target":"/mnt/data","force":false}' \
+  http://localhost:8080/api/v1/disk/unmount
+```
+
 See [API Documentation](docs/API.md) for complete endpoint reference.
 
 ## 🏗️ Project Structure
@@ -282,15 +312,16 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ### Current Status (v1.0 - 30% Complete)
 
-- ✅ Core infrastructure with daemon and CLI
 - ✅ Multi-protocol API support (HTTP, gRPC, UDS)
 - ✅ Secure file management with validation
 - ✅ System resource monitoring
+- ✅ Disk management with SMART support
 - ✅ Audit logging system
+- ✅ Deployment automation scripts
 
 ### Next Milestones
 
-- **v1.1**: Disk management (partition, mount, SMART)
+- **v1.1**: Network disk management (CIFS/NFS mounting)
 - **v1.2**: Network management (interface, IP config)
 - **v1.3**: Share management (Samba, NFS)
 - **v1.4**: File indexing and thumbnails

@@ -1,0 +1,51 @@
+# Docker Compose configuration for Mingyue Agent
+
+version: '3.8'
+
+services:
+  mingyue-agent:
+    build: .
+    image: mingyue-agent:latest
+    container_name: mingyue-agent
+    ports:
+      - "8080:8080"  # HTTP API
+      - "9090:9090"  # gRPC API
+    volumes:
+      # Configuration
+      - ./config.yaml:/etc/mingyue-agent/config.yaml:ro
+      # Logs
+      - mingyue-logs:/var/log/mingyue-agent
+      # Data directories (adjust as needed)
+      - /home:/home:ro
+      - /data:/data
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - mingyue-net
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  mingyue-logs:
+    driver: local
+
+networks:
+  mingyue-net:
+    driver: bridge
