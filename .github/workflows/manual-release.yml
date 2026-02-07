@@ -37,12 +37,94 @@ jobs:
           CGO_ENABLED: 0
         run: |
           OUTPUT_NAME=mingyue-agent-${{ github.event.inputs.version }}-linux-amd64
+          PACKAGE_DIR="mingyue-agent-${{ github.event.inputs.version }}-linux-amd64"
+
+          # Build the binary
           go build -v \
             -ldflags "-X main.version=${{ github.event.inputs.version }} -X main.buildTime=${{ steps.time.outputs.BUILD_TIME }} -s -w" \
             -o "${OUTPUT_NAME}" \
             ./cmd/agent
-          tar -czf "${OUTPUT_NAME}.tar.gz" "${OUTPUT_NAME}" config.example.yaml README.md LICENSE
-          echo "ASSET=${OUTPUT_NAME}.tar.gz" >> $GITHUB_ENV
+
+          # Create package directory structure
+          mkdir -p "${PACKAGE_DIR}"
+          mkdir -p "${PACKAGE_DIR}/docs"
+          mkdir -p "${PACKAGE_DIR}/scripts"
+
+          # Copy binary
+          cp "${OUTPUT_NAME}" "${PACKAGE_DIR}/mingyue-agent"
+          chmod +x "${PACKAGE_DIR}/mingyue-agent"
+
+          # Copy configuration
+          cp config.example.yaml "${PACKAGE_DIR}/"
+
+          # Copy documentation
+          cp README.md "${PACKAGE_DIR}/"
+          cp LICENSE "${PACKAGE_DIR}/"
+          cp CHANGELOG.md "${PACKAGE_DIR}/"
+          cp CONTRIBUTING.md "${PACKAGE_DIR}/"
+
+          # Copy docs directory
+          cp docs/API.md "${PACKAGE_DIR}/docs/"
+          cp docs/ARCHITECTURE.md "${PACKAGE_DIR}/docs/"
+          cp docs/DEPLOYMENT.md "${PACKAGE_DIR}/docs/"
+
+          # Copy installation scripts
+          cp scripts/install.sh "${PACKAGE_DIR}/scripts/"
+          cp scripts/uninstall.sh "${PACKAGE_DIR}/scripts/"
+          chmod +x "${PACKAGE_DIR}/scripts/install.sh"
+          chmod +x "${PACKAGE_DIR}/scripts/uninstall.sh"
+
+          # Create README for the package
+          cat > "${PACKAGE_DIR}/INSTALL.txt" << 'EOF'
+          Mingyue Agent Installation Guide
+          =================================
+
+          This package contains:
+          - mingyue-agent: The main binary
+          - config.example.yaml: Example configuration file
+          - scripts/install.sh: Automated installation script (Linux only)
+          - scripts/uninstall.sh: Automated uninstallation script (Linux only)
+          - docs/: Complete documentation
+
+          Quick Start (Manual Installation):
+          1. Copy the binary to your preferred location:
+             sudo cp mingyue-agent /usr/local/bin/
+
+          2. Create configuration:
+             sudo mkdir -p /etc/mingyue-agent
+             sudo cp config.example.yaml /etc/mingyue-agent/config.yaml
+             sudo nano /etc/mingyue-agent/config.yaml
+
+          3. Run the agent:
+             /usr/local/bin/mingyue-agent start --config /etc/mingyue-agent/config.yaml
+
+          Automated Installation (Linux with systemd):
+          1. Run the installation script as root:
+             sudo ./scripts/install.sh
+
+          2. Edit the configuration:
+             sudo nano /etc/mingyue-agent/config.yaml
+
+          3. Start the service:
+             sudo systemctl start mingyue-agent
+
+          4. Check status:
+             sudo systemctl status mingyue-agent
+
+          Uninstallation:
+          - Run the uninstallation script as root:
+            sudo ./scripts/uninstall.sh
+
+          For more information, see:
+          - README.md: Project overview and features
+          - docs/DEPLOYMENT.md: Detailed deployment guide
+          - docs/API.md: API reference
+          - docs/ARCHITECTURE.md: Technical architecture
+          EOF
+
+          # Create tarball
+          tar -czf "${PACKAGE_DIR}.tar.gz" "${PACKAGE_DIR}"
+          echo "ASSET=${PACKAGE_DIR}.tar.gz" >> $GITHUB_ENV
 
       - name: Generate checksum
         run: |
@@ -65,8 +147,82 @@ jobs:
           release_name: Mingyue Agent ${{ github.event.inputs.version }}
           body: |
             ## Mingyue Agent ${{ github.event.inputs.version }}
-            
-            详见CHANGELOG和文档。
+
+            ### Download
+
+            - **Linux AMD64**: `mingyue-agent-${{ github.event.inputs.version }}-linux-amd64.tar.gz`
+
+            ### Package Contents
+
+            Each release package includes:
+            - `mingyue-agent`: The main binary
+            - `config.example.yaml`: Example configuration file
+            - `scripts/install.sh`: Automated installation script (Linux/systemd)
+            - `scripts/uninstall.sh`: Automated uninstallation script
+            - `docs/`: Complete documentation (API, Architecture, Deployment)
+            - `INSTALL.txt`: Quick installation guide
+            - `README.md`, `LICENSE`, `CHANGELOG.md`: Project documentation
+
+            ### Installation
+
+            #### Quick Installation (Linux with systemd)
+
+            ```bash
+            # Extract the package
+            tar -xzf mingyue-agent-${{ github.event.inputs.version }}-linux-amd64.tar.gz
+            cd mingyue-agent-${{ github.event.inputs.version }}-linux-amd64
+
+            # Run the installer
+            sudo ./scripts/install.sh
+
+            # Edit configuration
+            sudo nano /etc/mingyue-agent/config.yaml
+
+            # Start the service
+            sudo systemctl start mingyue-agent
+            ```
+
+            #### Manual Installation
+
+            ```bash
+            # Extract the package
+            tar -xzf mingyue-agent-${{ github.event.inputs.version }}-linux-amd64.tar.gz
+            cd mingyue-agent-${{ github.event.inputs.version }}-linux-amd64
+
+            # Copy binary
+            sudo cp mingyue-agent /usr/local/bin/
+
+            # Create configuration
+            sudo mkdir -p /etc/mingyue-agent
+            sudo cp config.example.yaml /etc/mingyue-agent/config.yaml
+            sudo nano /etc/mingyue-agent/config.yaml
+
+            # Run the agent
+            /usr/local/bin/mingyue-agent start --config /etc/mingyue-agent/config.yaml
+            ```
+
+            ### Verification
+
+            Verify the package integrity:
+            ```bash
+            sha256sum -c mingyue-agent-${{ github.event.inputs.version }}-linux-amd64.tar.gz.sha256
+            ```
+
+            Check version:
+            ```bash
+            ./mingyue-agent version
+            ```
+
+            ### Documentation
+
+            - [API Documentation](https://github.com/KOPElan/mingyue-agent/blob/main/docs/API.md)
+            - [Architecture Guide](https://github.com/KOPElan/mingyue-agent/blob/main/docs/ARCHITECTURE.md)
+            - [Deployment Guide](https://github.com/KOPElan/mingyue-agent/blob/main/docs/DEPLOYMENT.md)
+            - [Implementation Progress](https://github.com/KOPElan/mingyue-agent/blob/main/IMPLEMENTATION.md)
+
+            ### Changelog
+
+            See [CHANGELOG.md](https://github.com/KOPElan/mingyue-agent/blob/main/CHANGELOG.md) for detailed changes.
           draft: false
           prerelease: false
         env:
