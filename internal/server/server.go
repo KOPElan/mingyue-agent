@@ -16,6 +16,9 @@ import (
 	"github.com/KOPElan/mingyue-agent/internal/diskmanager"
 	"github.com/KOPElan/mingyue-agent/internal/filemanager"
 	"github.com/KOPElan/mingyue-agent/internal/monitor"
+	"github.com/KOPElan/mingyue-agent/internal/netdisk"
+	"github.com/KOPElan/mingyue-agent/internal/netmanager"
+	"github.com/KOPElan/mingyue-agent/internal/sharemanager"
 	"google.golang.org/grpc"
 )
 
@@ -53,6 +56,65 @@ func New(cfg *config.Config, auditLogger *audit.Logger) (*Server, error) {
 		mux.HandleFunc("/api/v1/disk/mount", diskAPI.Mount)
 		mux.HandleFunc("/api/v1/disk/unmount", diskAPI.Unmount)
 		mux.HandleFunc("/api/v1/disk/smart", diskAPI.GetSMART)
+
+		// Network disk management
+		netDiskMgr, err := netdisk.New(&netdisk.Config{
+			AllowedHosts:       cfg.NetDisk.AllowedHosts,
+			AllowedMountPoints: cfg.NetDisk.AllowedMountPoints,
+			EncryptionKey:      cfg.NetDisk.EncryptionKey,
+			StateFile:          cfg.NetDisk.StateFile,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("create network disk manager: %w", err)
+		}
+		netDiskAPI := api.NewNetDiskHandlers(netDiskMgr, auditLogger)
+		mux.HandleFunc("/api/v1/netdisk/shares", netDiskAPI.ListShares)
+		mux.HandleFunc("/api/v1/netdisk/shares/add", netDiskAPI.AddShare)
+		mux.HandleFunc("/api/v1/netdisk/shares/remove", netDiskAPI.RemoveShare)
+		mux.HandleFunc("/api/v1/netdisk/mount", netDiskAPI.MountShare)
+		mux.HandleFunc("/api/v1/netdisk/unmount", netDiskAPI.UnmountShare)
+		mux.HandleFunc("/api/v1/netdisk/status", netDiskAPI.GetShareStatus)
+
+		// Network management
+		netMgr, err := netmanager.New(&netmanager.Config{
+			ManagementInterface: cfg.Network.ManagementInterface,
+			HistoryFile:         cfg.Network.HistoryFile,
+			ConfigDir:           cfg.Network.ConfigDir,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("create network manager: %w", err)
+		}
+		netMgrAPI := api.NewNetManagerHandlers(netMgr, auditLogger)
+		mux.HandleFunc("/api/v1/network/interfaces", netMgrAPI.ListInterfaces)
+		mux.HandleFunc("/api/v1/network/interface", netMgrAPI.GetInterface)
+		mux.HandleFunc("/api/v1/network/config", netMgrAPI.SetIPConfig)
+		mux.HandleFunc("/api/v1/network/rollback", netMgrAPI.RollbackConfig)
+		mux.HandleFunc("/api/v1/network/history", netMgrAPI.ListConfigHistory)
+		mux.HandleFunc("/api/v1/network/enable", netMgrAPI.EnableInterface)
+		mux.HandleFunc("/api/v1/network/disable", netMgrAPI.DisableInterface)
+		mux.HandleFunc("/api/v1/network/ports", netMgrAPI.ListListeningPorts)
+		mux.HandleFunc("/api/v1/network/traffic", netMgrAPI.GetTrafficStats)
+
+		// Share management
+		shareMgr, err := sharemanager.New(&sharemanager.Config{
+			AllowedPaths: cfg.ShareMgr.AllowedPaths,
+			SambaConfig:  cfg.ShareMgr.SambaConfig,
+			NFSConfig:    cfg.ShareMgr.NFSConfig,
+			BackupDir:    cfg.ShareMgr.BackupDir,
+			StateFile:    cfg.ShareMgr.StateFile,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("create share manager: %w", err)
+		}
+		shareAPI := api.NewShareHandlers(shareMgr, auditLogger)
+		mux.HandleFunc("/api/v1/shares", shareAPI.ListShares)
+		mux.HandleFunc("/api/v1/shares/get", shareAPI.GetShare)
+		mux.HandleFunc("/api/v1/shares/add", shareAPI.AddShare)
+		mux.HandleFunc("/api/v1/shares/update", shareAPI.UpdateShare)
+		mux.HandleFunc("/api/v1/shares/remove", shareAPI.RemoveShare)
+		mux.HandleFunc("/api/v1/shares/enable", shareAPI.EnableShare)
+		mux.HandleFunc("/api/v1/shares/disable", shareAPI.DisableShare)
+		mux.HandleFunc("/api/v1/shares/rollback", shareAPI.RollbackConfig)
 
 		s.httpServer = &http.Server{
 			Addr:         fmt.Sprintf("%s:%d", cfg.Server.ListenAddr, cfg.Server.HTTPPort),

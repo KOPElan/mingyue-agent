@@ -8,10 +8,13 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	API      APIConfig      `yaml:"api"`
-	Audit    AuditConfig    `yaml:"audit"`
-	Security SecurityConfig `yaml:"security"`
+	Server      ServerConfig      `yaml:"server"`
+	API         APIConfig         `yaml:"api"`
+	Audit       AuditConfig       `yaml:"audit"`
+	Security    SecurityConfig    `yaml:"security"`
+	NetDisk     NetDiskConfig     `yaml:"netdisk"`
+	Network     NetworkConfig     `yaml:"network"`
+	ShareMgr    ShareMgrConfig    `yaml:"sharemgr"`
 }
 
 type ServerConfig struct {
@@ -43,6 +46,27 @@ type SecurityConfig struct {
 	MaxUploadSize   int64    `yaml:"max_upload_size"`
 	RateLimitPerMin int      `yaml:"rate_limit_per_min"`
 	RequireConfirm  bool     `yaml:"require_confirm"`
+}
+
+type NetDiskConfig struct {
+	AllowedHosts       []string `yaml:"allowed_hosts"`
+	AllowedMountPoints []string `yaml:"allowed_mount_points"`
+	EncryptionKey      string   `yaml:"encryption_key"`
+	StateFile          string   `yaml:"state_file"`
+}
+
+type NetworkConfig struct {
+	ManagementInterface string `yaml:"management_interface"`
+	HistoryFile         string `yaml:"history_file"`
+	ConfigDir           string `yaml:"config_dir"`
+}
+
+type ShareMgrConfig struct {
+	AllowedPaths []string `yaml:"allowed_paths"`
+	SambaConfig  string   `yaml:"samba_config"`
+	NFSConfig    string   `yaml:"nfs_config"`
+	BackupDir    string   `yaml:"backup_dir"`
+	StateFile    string   `yaml:"state_file"`
 }
 
 func Load(path string) (*Config, error) {
@@ -96,6 +120,24 @@ func defaultConfig() *Config {
 			MaxUploadSize:   10 * 1024 * 1024 * 1024,
 			RateLimitPerMin: 1000,
 			RequireConfirm:  true,
+		},
+		NetDisk: NetDiskConfig{
+			AllowedHosts:       []string{"*"},
+			AllowedMountPoints: []string{"/mnt", "/media"},
+			EncryptionKey:      "change-this-to-a-secure-key-32b",
+			StateFile:          "/var/lib/mingyue-agent/netdisk-state.json",
+		},
+		Network: NetworkConfig{
+			ManagementInterface: "",
+			HistoryFile:         "/var/lib/mingyue-agent/network-history.json",
+			ConfigDir:           "/etc/mingyue-agent/network",
+		},
+		ShareMgr: ShareMgrConfig{
+			AllowedPaths: []string{"/home", "/data", "/mnt", "/media"},
+			SambaConfig:  "/etc/samba/smb.conf",
+			NFSConfig:    "/etc/exports",
+			BackupDir:    "/var/lib/mingyue-agent/share-backups",
+			StateFile:    "/var/lib/mingyue-agent/share-state.json",
 		},
 	}
 }
