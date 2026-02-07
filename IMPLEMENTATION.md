@@ -415,6 +415,12 @@ docs/               # ✅ OpenAPI/Swagger documentation
    - Metrics export for Prometheus/Grafana
    - Custom plugin system for task handlers
 
+## Technical Debt & Known Gaps
+
+- Authentication middleware is not wired across all endpoints; token/session validation and RBAC remain pending.
+- Rate limiting and mTLS enforcement are not implemented despite configuration entries.
+- Remote audit log push worker is stubbed and needs a real delivery mechanism.
+
 ## Testing Strategy
 
 - Unit tests for each package

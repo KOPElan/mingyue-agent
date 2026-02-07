@@ -33,6 +33,7 @@ func New(cfg *config.Config) (*Daemon, error) {
 		cfg.Audit.LogPath,
 		cfg.Audit.RemotePush,
 		cfg.Audit.RemoteURL,
+		cfg.Audit.Enabled,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create audit logger: %w", err)

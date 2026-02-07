@@ -26,3 +26,28 @@ security:
   max_upload_size: 10737418240  # 10GB
   rate_limit_per_min: 1000
   require_confirm: true
+
+netdisk:
+  allowed_hosts:
+    - "*"
+  allowed_mount_points:
+    - "/mnt"
+    - "/media"
+  encryption_key: "change-this-to-a-secure-key-32b"
+  state_file: "/var/lib/mingyue-agent/netdisk-state.json"
+
+network:
+  management_interface: ""
+  history_file: "/var/lib/mingyue-agent/network-history.json"
+  config_dir: "/etc/mingyue-agent/network"
+
+sharemgr:
+  allowed_paths:
+    - "/home"
+    - "/data"
+    - "/mnt"
+    - "/media"
+  samba_config: "/etc/samba/smb.conf"
+  nfs_config: "/etc/exports"
+  backup_dir: "/var/lib/mingyue-agent/share-backups"
+  state_file: "/var/lib/mingyue-agent/share-state.json"

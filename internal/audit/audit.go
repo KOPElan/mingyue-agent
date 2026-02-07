@@ -28,12 +28,17 @@ type Entry struct {
 	Details   map[string]interface{} `json:"details,omitempty"`
 }
 
-func New(logPath string, remotePush bool, remoteURL string) (*Logger, error) {
+func New(logPath string, remotePush bool, remoteURL string, enabled bool) (*Logger, error) {
 	l := &Logger{
-		enabled:  true,
-		pushURL:  remoteURL,
-		pushChan: make(chan *Entry, 1000),
+		enabled: enabled,
+		pushURL: remoteURL,
 	}
+
+	if !enabled {
+		return l, nil
+	}
+
+	l.pushChan = make(chan *Entry, 1000)
 
 	if logPath != "" {
 		if err := os.MkdirAll(filepath.Dir(logPath), 0755); err != nil {

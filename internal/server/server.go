@@ -41,7 +41,7 @@ func New(cfg *config.Config, auditLogger *audit.Logger) (*Server, error) {
 
 	if cfg.API.EnableHTTP {
 		mux := http.NewServeMux()
-		api.RegisterHTTPHandlers(mux, auditLogger)
+		api.RegisterHTTPHandlers(mux, auditLogger, cfg)
 
 		// Swagger UI
 		mux.Handle("/swagger/", httpSwagger.WrapHandler)
@@ -51,7 +51,7 @@ func New(cfg *config.Config, auditLogger *audit.Logger) (*Server, error) {
 		monitorAPI.Register(mux)
 
 		fileMgr := filemanager.New(cfg.Security.AllowedPaths, auditLogger)
-		fileAPI := api.NewFileAPI(fileMgr, auditLogger)
+		fileAPI := api.NewFileAPI(fileMgr, auditLogger, cfg.Security.MaxUploadSize)
 		fileAPI.Register(mux)
 
 		diskMgr := diskmanager.New(cfg.Security.AllowedPaths)
@@ -142,7 +142,13 @@ func (s *Server) Start(ctx context.Context) error {
 		s.wg.Add(1)
 		go func() {
 			defer s.wg.Done()
-			if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			var err error
+			if s.config.API.TLSCert != "" && s.config.API.TLSKey != "" {
+				err = s.httpServer.ListenAndServeTLS(s.config.API.TLSCert, s.config.API.TLSKey)
+			} else {
+				err = s.httpServer.ListenAndServe()
+			}
+			if err != nil && err != http.ErrServerClosed {
 				fmt.Printf("HTTP server error: %v\n", err)
 			}
 		}()
@@ -187,14 +193,14 @@ func (s *Server) Start(ctx context.Context) error {
 			defer s.wg.Done()
 
 			mux := http.NewServeMux()
-			api.RegisterHTTPHandlers(mux, s.audit)
+			api.RegisterHTTPHandlers(mux, s.audit, s.config)
 
 			mon := monitor.New()
 			monitorAPI := api.NewMonitorAPI(mon, s.audit)
 			monitorAPI.Register(mux)
 
 			fileMgr := filemanager.New(s.config.Security.AllowedPaths, s.audit)
-			fileAPI := api.NewFileAPI(fileMgr, s.audit)
+			fileAPI := api.NewFileAPI(fileMgr, s.audit, s.config.Security.MaxUploadSize)
 			fileAPI.Register(mux)
 
 			diskMgr := diskmanager.New(s.config.Security.AllowedPaths)

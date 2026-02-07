@@ -54,7 +54,7 @@ Mingyue Agent is the core local management service for the Mingyue Portal home s
 ### Prerequisites
 
 - Go 1.22 or higher
-- Linux operating system (primary target)
+- Linux operating system (required; non-Linux platforms are unsupported)
 - Make (optional, for build automation)
 
 ### Installation
@@ -117,6 +117,7 @@ audit:
 ./bin/mingyue-agent start --config config.yaml
 
 # Or use the default config location
+# (falls back to ./config.yaml if /etc/mingyue-agent/config.yaml is missing)
 ./bin/mingyue-agent start
 
 # Check version

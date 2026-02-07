@@ -149,6 +149,9 @@ func (c *Config) Validate() error {
 	if c.Server.GRPCPort < 1 || c.Server.GRPCPort > 65535 {
 		return fmt.Errorf("invalid grpc_port: %d", c.Server.GRPCPort)
 	}
+	if (c.API.TLSCert == "") != (c.API.TLSKey == "") {
+		return fmt.Errorf("tls_cert and tls_key must both be set")
+	}
 	if c.API.EnableHTTP && c.API.TLSCert != "" {
 		if _, err := os.Stat(c.API.TLSCert); err != nil {
 			return fmt.Errorf("tls_cert not found: %w", err)

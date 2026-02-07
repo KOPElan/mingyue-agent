@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/KOPElan/mingyue-agent/internal/audit"
+	"github.com/KOPElan/mingyue-agent/internal/config"
 )
 
 type Response struct {
@@ -29,12 +31,10 @@ type RegistrationInfo struct {
 	APIURLs   []string  `json:"api_urls"`
 }
 
-func RegisterHTTPHandlers(mux *http.ServeMux, auditLogger *audit.Logger) {
-	mux.HandleFunc("/api/v1/register", registrationHandler(auditLogger))
+func RegisterHTTPHandlers(mux *http.ServeMux, auditLogger *audit.Logger, cfg *config.Config) {
+	mux.HandleFunc("/api/v1/register", registrationHandler(auditLogger, cfg))
 	mux.HandleFunc("/api/v1/status", statusHandler)
 }
-
-
 
 // registrationHandler godoc
 // @Summary Register agent with WebUI
@@ -46,7 +46,7 @@ func RegisterHTTPHandlers(mux *http.ServeMux, auditLogger *audit.Logger) {
 // @Failure 405 {object} Response
 // @Router /register [post]
 // @Security UserAuth
-func registrationHandler(auditLogger *audit.Logger) http.HandlerFunc {
+func registrationHandler(auditLogger *audit.Logger, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			writeJSON(w, http.StatusMethodNotAllowed, Response{
@@ -57,13 +57,14 @@ func registrationHandler(auditLogger *audit.Logger) http.HandlerFunc {
 		}
 
 		hostname, _ := getHostname()
+		apiURLs := buildAPIURLs(cfg, hostname)
 
 		info := RegistrationInfo{
 			AgentID:   fmt.Sprintf("agent-%s-%d", hostname, time.Now().Unix()),
 			Hostname:  hostname,
 			Version:   "1.0.0",
 			StartTime: time.Now(),
-			APIURLs:   []string{"http://localhost:8080/api/v1"},
+			APIURLs:   apiURLs,
 		}
 
 		if auditLogger != nil {
@@ -120,5 +121,31 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 }
 
 func getHostname() (string, error) {
-	return "localhost", nil
+	hostname, err := os.Hostname()
+	if err != nil || hostname == "" {
+		return "localhost", err
+	}
+	return hostname, nil
+}
+
+func buildAPIURLs(cfg *config.Config, hostname string) []string {
+	if cfg == nil || !cfg.API.EnableHTTP {
+		return nil
+	}
+
+	host := cfg.Server.ListenAddr
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		if hostname != "" {
+			host = hostname
+		} else {
+			host = "localhost"
+		}
+	}
+
+	scheme := "http"
+	if cfg.API.TLSCert != "" && cfg.API.TLSKey != "" {
+		scheme = "https"
+	}
+
+	return []string{fmt.Sprintf("%s://%s:%d/api/v1", scheme, host, cfg.Server.HTTPPort)}
 }
