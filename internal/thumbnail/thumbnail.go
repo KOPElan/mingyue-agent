@@ -30,10 +30,10 @@ type CleanupPolicy struct {
 
 // Generator handles thumbnail generation and caching
 type Generator struct {
-	config     Config
-	mu         sync.RWMutex
-	cache      map[string]*ThumbnailInfo
-	cacheSize  int64
+	config      Config
+	mu          sync.RWMutex
+	cache       map[string]*ThumbnailInfo
+	cacheSize   int64
 	lastCleanup time.Time
 }
 

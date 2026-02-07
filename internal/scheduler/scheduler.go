@@ -13,17 +13,17 @@ import (
 
 // Task represents a scheduled task
 type Task struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	Type        string                 `json:"type"` // e.g., "scan", "cleanup", "backup"
-	Schedule    string                 `json:"schedule"` // cron-like format
-	Params      map[string]interface{} `json:"params"`
-	Enabled     bool                   `json:"enabled"`
-	LastRun     *time.Time             `json:"last_run,omitempty"`
-	NextRun     *time.Time             `json:"next_run,omitempty"`
-	Status      string                 `json:"status"` // idle, running, failed
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
+	ID        string                 `json:"id"`
+	Name      string                 `json:"name"`
+	Type      string                 `json:"type"`     // e.g., "scan", "cleanup", "backup"
+	Schedule  string                 `json:"schedule"` // cron-like format
+	Params    map[string]interface{} `json:"params"`
+	Enabled   bool                   `json:"enabled"`
+	LastRun   *time.Time             `json:"last_run,omitempty"`
+	NextRun   *time.Time             `json:"next_run,omitempty"`
+	Status    string                 `json:"status"` // idle, running, failed
+	CreatedAt time.Time              `json:"created_at"`
+	UpdatedAt time.Time              `json:"updated_at"`
 }
 
 // TaskExecution represents a task execution record

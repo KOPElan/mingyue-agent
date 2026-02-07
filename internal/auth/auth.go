@@ -47,15 +47,15 @@ type AuthManager struct {
 
 // Config holds auth configuration
 type Config struct {
-	DBPath             string
-	TokenExpiry        time.Duration
-	SessionExpiry      time.Duration
-	RequireAuth        bool
-	AllowedIPs         []string
-	EnableMTLS         bool
-	MTLSCertPath       string
-	MTLSKeyPath        string
-	MTLSCAPath         string
+	DBPath        string
+	TokenExpiry   time.Duration
+	SessionExpiry time.Duration
+	RequireAuth   bool
+	AllowedIPs    []string
+	EnableMTLS    bool
+	MTLSCertPath  string
+	MTLSKeyPath   string
+	MTLSCAPath    string
 }
 
 // New creates a new AuthManager
