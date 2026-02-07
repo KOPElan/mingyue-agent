@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"syscall"
 	"time"
 
 	"github.com/KOPElan/mingyue-agent/internal/audit"
@@ -247,9 +246,9 @@ func (m *Manager) buildFileInfo(path string, info os.FileInfo) FileInfo {
 		Permissions: info.Mode().String(),
 	}
 
-	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-		fileInfo.Owner = stat.Uid
-		fileInfo.Group = stat.Gid
+	if owner, group, ok := getOwnerAndGroup(info); ok {
+		fileInfo.Owner = owner
+		fileInfo.Group = group
 	}
 
 	return fileInfo
