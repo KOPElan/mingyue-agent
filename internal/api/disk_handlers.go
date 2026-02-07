@@ -23,6 +23,14 @@ func NewDiskHandlers(manager *diskmanager.Manager, auditLogger *audit.Logger) *D
 	}
 }
 
+func (h *DiskHandlers) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/v1/disk/list", h.ListDisks)
+	mux.HandleFunc("/api/v1/disk/partitions", h.ListPartitions)
+	mux.HandleFunc("/api/v1/disk/mount", h.Mount)
+	mux.HandleFunc("/api/v1/disk/unmount", h.Unmount)
+	mux.HandleFunc("/api/v1/disk/smart", h.GetSMART)
+}
+
 // ListPartitions handles GET /api/v1/disk/partitions
 func (h *DiskHandlers) ListPartitions(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {

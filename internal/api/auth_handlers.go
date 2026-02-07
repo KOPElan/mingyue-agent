@@ -21,6 +21,14 @@ func NewAuthHandlers(authMgr *auth.AuthManager, auditLogger *audit.Logger) *Auth
 	}
 }
 
+func (h *AuthHandlers) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/v1/auth/tokens/create", h.CreateToken)
+	mux.HandleFunc("/api/v1/auth/tokens", h.ListTokens)
+	mux.HandleFunc("/api/v1/auth/tokens/revoke", h.RevokeToken)
+	mux.HandleFunc("/api/v1/auth/sessions/create", h.CreateSession)
+	mux.HandleFunc("/api/v1/auth/sessions/revoke", h.RevokeSession)
+}
+
 type CreateTokenRequest struct {
 	UserID    string   `json:"user_id"`
 	Name      string   `json:"name"`

@@ -21,6 +21,16 @@ func NewSchedulerHandlers(sched *scheduler.Scheduler, auditLogger *audit.Logger)
 	}
 }
 
+func (h *SchedulerHandlers) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/v1/scheduler/tasks", h.ListTasks)
+	mux.HandleFunc("/api/v1/scheduler/tasks/get", h.GetTask)
+	mux.HandleFunc("/api/v1/scheduler/tasks/add", h.AddTask)
+	mux.HandleFunc("/api/v1/scheduler/tasks/update", h.UpdateTask)
+	mux.HandleFunc("/api/v1/scheduler/tasks/delete", h.DeleteTask)
+	mux.HandleFunc("/api/v1/scheduler/tasks/execute", h.ExecuteTask)
+	mux.HandleFunc("/api/v1/scheduler/history", h.GetExecutionHistory)
+}
+
 // ListTasks godoc
 // @Summary List all tasks
 // @Description Returns all scheduled tasks

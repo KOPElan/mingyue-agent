@@ -23,6 +23,17 @@ func NewShareHandlers(manager *sharemanager.Manager, auditLogger *audit.Logger) 
 	}
 }
 
+func (h *ShareHandlers) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/v1/shares", h.ListShares)
+	mux.HandleFunc("/api/v1/shares/get", h.GetShare)
+	mux.HandleFunc("/api/v1/shares/add", h.AddShare)
+	mux.HandleFunc("/api/v1/shares/update", h.UpdateShare)
+	mux.HandleFunc("/api/v1/shares/remove", h.RemoveShare)
+	mux.HandleFunc("/api/v1/shares/enable", h.EnableShare)
+	mux.HandleFunc("/api/v1/shares/disable", h.DisableShare)
+	mux.HandleFunc("/api/v1/shares/rollback", h.RollbackConfig)
+}
+
 // ListShares handles GET /api/v1/shares
 func (h *ShareHandlers) ListShares(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
