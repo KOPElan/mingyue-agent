@@ -41,7 +41,7 @@ jobs:
           GOARCH: amd64
           CGO_ENABLED: 0
         run: |
-          OUTPUT_NAME=mingyue-agent-${{ steps.version.outputs.VERSION }}-linux-amd64
+          OUTPUT_NAME=mingyue-agent
           PACKAGE_DIR="mingyue-agent-${{ steps.version.outputs.VERSION }}-linux-amd64"
 
           # Build the binary
