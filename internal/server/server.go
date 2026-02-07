@@ -13,6 +13,7 @@ import (
 	"github.com/KOPElan/mingyue-agent/internal/api"
 	"github.com/KOPElan/mingyue-agent/internal/audit"
 	"github.com/KOPElan/mingyue-agent/internal/config"
+	"github.com/KOPElan/mingyue-agent/internal/filemanager"
 	"google.golang.org/grpc"
 )
 
@@ -34,6 +35,10 @@ func New(cfg *config.Config, auditLogger *audit.Logger) (*Server, error) {
 	if cfg.API.EnableHTTP {
 		mux := http.NewServeMux()
 		api.RegisterHTTPHandlers(mux, auditLogger)
+
+		fileMgr := filemanager.New(cfg.Security.AllowedPaths, auditLogger)
+		fileAPI := api.NewFileAPI(fileMgr, auditLogger)
+		fileAPI.Register(mux)
 
 		s.httpServer = &http.Server{
 			Addr:         fmt.Sprintf("%s:%d", cfg.Server.ListenAddr, cfg.Server.HTTPPort),
@@ -102,6 +107,10 @@ func (s *Server) Start(ctx context.Context) error {
 
 			mux := http.NewServeMux()
 			api.RegisterHTTPHandlers(mux, s.audit)
+
+			fileMgr := filemanager.New(s.config.Security.AllowedPaths, s.audit)
+			fileAPI := api.NewFileAPI(fileMgr, s.audit)
+			fileAPI.Register(mux)
 
 			srv := &http.Server{Handler: mux}
 			if err := srv.Serve(lis); err != nil && err != http.ErrServerClosed {
