@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	_ "github.com/KOPElan/mingyue-agent/docs"
 	"github.com/KOPElan/mingyue-agent/internal/api"
 	"github.com/KOPElan/mingyue-agent/internal/audit"
 	"github.com/KOPElan/mingyue-agent/internal/config"
@@ -19,6 +20,7 @@ import (
 	"github.com/KOPElan/mingyue-agent/internal/netdisk"
 	"github.com/KOPElan/mingyue-agent/internal/netmanager"
 	"github.com/KOPElan/mingyue-agent/internal/sharemanager"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"google.golang.org/grpc"
 )
 
@@ -40,6 +42,9 @@ func New(cfg *config.Config, auditLogger *audit.Logger) (*Server, error) {
 	if cfg.API.EnableHTTP {
 		mux := http.NewServeMux()
 		api.RegisterHTTPHandlers(mux, auditLogger)
+
+		// Swagger UI
+		mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
 		mon := monitor.New()
 		monitorAPI := api.NewMonitorAPI(mon, auditLogger)

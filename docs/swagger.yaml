@@ -1,0 +1,130 @@
+basePath: /api/v1
+definitions:
+  internal_api.HealthResponse:
+    properties:
+      status:
+        type: string
+      timestamp:
+        type: string
+      version:
+        type: string
+    type: object
+  internal_api.RegistrationInfo:
+    properties:
+      agent_id:
+        type: string
+      api_urls:
+        items:
+          type: string
+        type: array
+      hostname:
+        type: string
+      start_time:
+        type: string
+      version:
+        type: string
+    type: object
+  internal_api.Response:
+    properties:
+      data: {}
+      error:
+        type: string
+      success:
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: Mingyue Agent Team
+    url: https://github.com/KOPElan/mingyue-agent
+  description: |-
+    Mingyue Agent is the core local management service for the Mingyue Portal home server ecosystem, providing both remote collaboration agent and local privileged operations capabilities.
+
+    ## Features
+    - Secure File Management with path validation
+    - Disk Management with SMART monitoring
+    - Network Disk Management (CIFS/NFS)
+    - System Network Management
+    - Share Management (Samba/NFS)
+    - System Resource Monitoring
+    - Comprehensive Audit Logging
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Mingyue Agent API
+  version: "1.0"
+paths:
+  /healthz:
+    get:
+      description: Returns the current health status of the agent
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_api.HealthResponse'
+              type: object
+      summary: Health check endpoint
+      tags:
+      - health
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Registers the agent and returns registration information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_api.RegistrationInfo'
+              type: object
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/internal_api.Response'
+      security:
+      - UserAuth: []
+      summary: Register agent with WebUI
+      tags:
+      - registration
+  /status:
+    get:
+      description: Returns the current status and uptime of the agent
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.Response'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/internal_api.Response'
+      summary: Get agent status
+      tags:
+      - status
+schemes:
+- http
+- https
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: X-API-Key
+    type: apiKey
+  UserAuth:
+    in: header
+    name: X-User
+    type: apiKey
+swagger: "2.0"

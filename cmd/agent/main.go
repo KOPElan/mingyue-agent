@@ -12,6 +12,38 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// @title Mingyue Agent API
+// @version 1.0
+// @description Mingyue Agent is the core local management service for the Mingyue Portal home server ecosystem, providing both remote collaboration agent and local privileged operations capabilities.
+// @description
+// @description ## Features
+// @description - Secure File Management with path validation
+// @description - Disk Management with SMART monitoring
+// @description - Network Disk Management (CIFS/NFS)
+// @description - System Network Management
+// @description - Share Management (Samba/NFS)
+// @description - System Resource Monitoring
+// @description - Comprehensive Audit Logging
+//
+// @contact.name Mingyue Agent Team
+// @contact.url https://github.com/KOPElan/mingyue-agent
+//
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+//
+// @host localhost:8080
+// @BasePath /api/v1
+//
+// @schemes http https
+//
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name X-API-Key
+//
+// @securityDefinitions.apikey UserAuth
+// @in header
+// @name X-User
+
 var (
 	version   = "dev"
 	buildTime = "unknown"

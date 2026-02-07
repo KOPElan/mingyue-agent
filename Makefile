@@ -1,4 +1,4 @@
-.PHONY: build test clean run install
+.PHONY: build test clean run install swagger
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -8,6 +8,11 @@ build:
 	@echo "Building mingyue-agent..."
 	@mkdir -p bin
 	go build $(LDFLAGS) -o bin/mingyue-agent ./cmd/agent
+
+swagger:
+	@echo "Generating Swagger documentation..."
+	@which swag > /dev/null || (echo "swag not found, installing..." && go install github.com/swaggo/swag/cmd/swag@latest)
+	swag init -g cmd/agent/main.go -o ./docs --parseDependency --parseInternal
 
 test:
 	@echo "Running tests..."
