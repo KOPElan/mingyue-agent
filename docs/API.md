@@ -754,12 +754,765 @@ curl "http://localhost:8080/api/v1/disk/smart?device=/dev/sda"
 
 ---
 
+## Network Disk Management APIs
+
+### GET /api/v1/netdisk/shares
+
+Lists all configured network shares (CIFS/NFS).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "cifs-192.168.1.100-1707312000",
+      "name": "backup-share",
+      "protocol": "cifs",
+      "host": "192.168.1.100",
+      "path": "/backup",
+      "mount_point": "/mnt/backup",
+      "username": "user",
+      "options": {},
+      "auto_mount": true,
+      "mounted": true,
+      "last_checked": "2026-02-07T14:30:00Z",
+      "healthy": true
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+curl http://localhost:8080/api/v1/netdisk/shares
+```
+
+---
+
+### POST /api/v1/netdisk/shares/add
+
+Adds a new network share configuration.
+
+**Request Body:**
+```json
+{
+  "name": "media-share",
+  "protocol": "nfs",
+  "host": "192.168.1.200",
+  "path": "/export/media",
+  "mount_point": "/mnt/media",
+  "options": {
+    "vers": "4"
+  },
+  "auto_mount": true
+}
+```
+
+**For CIFS:**
+```json
+{
+  "name": "documents",
+  "protocol": "cifs",
+  "host": "192.168.1.150",
+  "path": "/documents",
+  "mount_point": "/mnt/documents",
+  "username": "user",
+  "password": "password",
+  "options": {},
+  "auto_mount": false
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "share_id": "nfs-192.168.1.200-1707312100"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"name":"media","protocol":"nfs","host":"192.168.1.200","path":"/export/media","mount_point":"/mnt/media"}' \
+  http://localhost:8080/api/v1/netdisk/shares/add
+```
+
+**Security:** Passwords are encrypted using AES-256-GCM before storage.
+
+---
+
+### DELETE /api/v1/netdisk/shares/remove
+
+Removes a network share (unmounts if mounted).
+
+**Query Parameters:**
+- `id` (required): Share ID
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "share removed"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/netdisk/shares/remove?id=nfs-192.168.1.200-1707312100"
+```
+
+---
+
+### POST /api/v1/netdisk/mount
+
+Mounts a configured network share.
+
+**Request Body:**
+```json
+{
+  "id": "cifs-192.168.1.100-1707312000"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "share mounted"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"id":"cifs-192.168.1.100-1707312000"}' \
+  http://localhost:8080/api/v1/netdisk/mount
+```
+
+---
+
+### POST /api/v1/netdisk/unmount
+
+Unmounts a network share.
+
+**Request Body:**
+```json
+{
+  "id": "cifs-192.168.1.100-1707312000"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "share unmounted"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"id":"cifs-192.168.1.100-1707312000"}' \
+  http://localhost:8080/api/v1/netdisk/unmount
+```
+
+---
+
+### GET /api/v1/netdisk/status
+
+Gets the status of a specific share.
+
+**Query Parameters:**
+- `id` (required): Share ID
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "cifs-192.168.1.100-1707312000",
+    "name": "backup-share",
+    "mounted": true,
+    "healthy": true,
+    "last_checked": "2026-02-07T14:35:00Z"
+  }
+}
+```
+
+**Example:**
+```bash
+curl "http://localhost:8080/api/v1/netdisk/status?id=cifs-192.168.1.100-1707312000"
+```
+
+---
+
+## Network Management APIs
+
+### GET /api/v1/network/interfaces
+
+Lists all network interfaces with statistics.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "name": "eth0",
+      "mac": "00:0c:29:12:34:56",
+      "ip_addresses": ["192.168.1.10", "fe80::20c:29ff:fe12:3456"],
+      "state": "up",
+      "speed": 1000,
+      "mtu": 1500,
+      "rx_bytes": 123456789,
+      "tx_bytes": 987654321,
+      "rx_packets": 654321,
+      "tx_packets": 123456,
+      "rx_errors": 0,
+      "tx_errors": 0,
+      "flags": ["UP"],
+      "last_updated": "2026-02-07T14:40:00Z"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+curl http://localhost:8080/api/v1/network/interfaces
+```
+
+---
+
+### GET /api/v1/network/interface
+
+Gets detailed information about a specific interface.
+
+**Query Parameters:**
+- `name` (required): Interface name
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "name": "eth0",
+    "mac": "00:0c:29:12:34:56",
+    "ip_addresses": ["192.168.1.10"],
+    "state": "up",
+    "speed": 1000,
+    "mtu": 1500
+  }
+}
+```
+
+**Example:**
+```bash
+curl "http://localhost:8080/api/v1/network/interface?name=eth0"
+```
+
+---
+
+### POST /api/v1/network/config
+
+Sets IP configuration for an interface.
+
+**Request Body:**
+```json
+{
+  "config": {
+    "interface": "eth1",
+    "method": "static",
+    "address": "192.168.2.10",
+    "netmask": "24",
+    "gateway": "192.168.2.1",
+    "dns_servers": ["8.8.8.8", "8.8.4.4"]
+  },
+  "reason": "Changing to static IP for server"
+}
+```
+
+**For DHCP:**
+```json
+{
+  "config": {
+    "interface": "eth1",
+    "method": "dhcp"
+  },
+  "reason": "Switching to DHCP"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "IP config updated"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"config":{"interface":"eth1","method":"static","address":"192.168.2.10","netmask":"24","gateway":"192.168.2.1"},"reason":"Configuration update"}' \
+  http://localhost:8080/api/v1/network/config
+```
+
+**Security:** Cannot configure management interface to prevent self-disconnection.
+
+---
+
+### POST /api/v1/network/rollback
+
+Rolls back to a previous network configuration.
+
+**Request Body:**
+```json
+{
+  "history_id": "eth1-1707312000"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "config rolled back"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"history_id":"eth1-1707312000"}' \
+  http://localhost:8080/api/v1/network/rollback
+```
+
+---
+
+### GET /api/v1/network/history
+
+Gets configuration history for an interface.
+
+**Query Parameters:**
+- `interface` (optional): Filter by interface name
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "eth1-1707312000",
+      "timestamp": "2026-02-07T14:00:00Z",
+      "interface": "eth1",
+      "config": {
+        "method": "static",
+        "address": "192.168.2.10",
+        "netmask": "24"
+      },
+      "user": "admin",
+      "reason": "Initial configuration"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+curl "http://localhost:8080/api/v1/network/history?interface=eth1"
+```
+
+---
+
+### POST /api/v1/network/enable
+
+Enables a network interface.
+
+**Request Body:**
+```json
+{
+  "interface": "eth1"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "interface enabled"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"interface":"eth1"}' \
+  http://localhost:8080/api/v1/network/enable
+```
+
+---
+
+### POST /api/v1/network/disable
+
+Disables a network interface.
+
+**Request Body:**
+```json
+{
+  "interface": "eth1"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "interface disabled"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"interface":"eth1"}' \
+  http://localhost:8080/api/v1/network/disable
+```
+
+**Security:** Cannot disable management interface.
+
+---
+
+### GET /api/v1/network/ports
+
+Lists all listening ports and processes.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "port": 8080,
+      "protocol": "tcp",
+      "address": "0.0.0.0",
+      "state": "LISTEN",
+      "process": "mingyue-agent"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+curl http://localhost:8080/api/v1/network/ports
+```
+
+---
+
+### GET /api/v1/network/traffic
+
+Gets real-time traffic statistics for all interfaces.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "eth0": {
+      "name": "eth0",
+      "rx_bytes": 123456789,
+      "tx_bytes": 987654321,
+      "rx_packets": 654321,
+      "tx_packets": 123456
+    }
+  }
+}
+```
+
+**Example:**
+```bash
+curl http://localhost:8080/api/v1/network/traffic
+```
+
+---
+
+## Share Management APIs
+
+### GET /api/v1/shares
+
+Lists all configured shares (Samba and NFS).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "share-photos-1707312000",
+      "name": "photos",
+      "type": "samba",
+      "path": "/data/photos",
+      "description": "Family photos",
+      "users": ["user1", "user2"],
+      "groups": [],
+      "access_mode": "ro",
+      "options": {},
+      "enabled": true,
+      "healthy": true,
+      "last_checked": "2026-02-07T14:45:00Z",
+      "created_at": "2026-02-07T10:00:00Z",
+      "updated_at": "2026-02-07T14:00:00Z"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+curl http://localhost:8080/api/v1/shares
+```
+
+---
+
+### GET /api/v1/shares/get
+
+Gets details of a specific share.
+
+**Query Parameters:**
+- `id` (required): Share ID
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "share-photos-1707312000",
+    "name": "photos",
+    "type": "samba",
+    "path": "/data/photos",
+    "enabled": true
+  }
+}
+```
+
+**Example:**
+```bash
+curl "http://localhost:8080/api/v1/shares/get?id=share-photos-1707312000"
+```
+
+---
+
+### POST /api/v1/shares/add
+
+Creates a new share.
+
+**Request Body (Samba):**
+```json
+{
+  "name": "documents",
+  "type": "samba",
+  "path": "/data/documents",
+  "description": "Shared documents",
+  "users": ["user1"],
+  "access_mode": "rw",
+  "options": {
+    "browseable": "yes"
+  }
+}
+```
+
+**Request Body (NFS):**
+```json
+{
+  "name": "media",
+  "type": "nfs",
+  "path": "/data/media",
+  "access_mode": "ro",
+  "options": {
+    "no_subtree_check": ""
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "share_id": "share-documents-1707312100"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"name":"documents","type":"samba","path":"/data/documents","access_mode":"rw"}' \
+  http://localhost:8080/api/v1/shares/add
+```
+
+---
+
+### PUT /api/v1/shares/update
+
+Updates an existing share.
+
+**Query Parameters:**
+- `id` (required): Share ID
+
+**Request Body:**
+```json
+{
+  "description": "Updated description",
+  "access_mode": "ro",
+  "users": ["user1", "user2"]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "share updated"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X PUT -H "Content-Type: application/json" \
+  -d '{"access_mode":"ro"}' \
+  "http://localhost:8080/api/v1/shares/update?id=share-documents-1707312100"
+```
+
+---
+
+### DELETE /api/v1/shares/remove
+
+Removes a share.
+
+**Query Parameters:**
+- `id` (required): Share ID
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "share removed"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/shares/remove?id=share-documents-1707312100"
+```
+
+---
+
+### POST /api/v1/shares/enable
+
+Enables a share.
+
+**Query Parameters:**
+- `id` (required): Share ID
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "share enabled"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST "http://localhost:8080/api/v1/shares/enable?id=share-documents-1707312100"
+```
+
+---
+
+### POST /api/v1/shares/disable
+
+Disables a share.
+
+**Query Parameters:**
+- `id` (required): Share ID
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "share disabled"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST "http://localhost:8080/api/v1/shares/disable?id=share-documents-1707312100"
+```
+
+---
+
+### POST /api/v1/shares/rollback
+
+Rolls back to a previous share configuration.
+
+**Request Body:**
+```json
+{
+  "timestamp": 1707312000
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "config rolled back"
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"timestamp":1707312000}' \
+  http://localhost:8080/api/v1/shares/rollback
+```
+
+---
+
 ## Future APIs
 
 Planned API additions:
-- Network disk management (CIFS/NFS mounting)
-- Network management (interface, IP configuration)
-- Share management (Samba, NFS)
 - File indexing and search
 - Task scheduling
 

@@ -104,6 +104,110 @@
 
 ---
 
+### ✅ Issue #3 (GH-004): 网络磁盘管理 - Network Disk Management
+
+**Implemented:**
+- CIFS/NFS share discovery and mount/unmount operations
+- Credential encryption using AES-256-GCM
+- Whitelist-based host and mount point configuration
+- Automatic health monitoring and auto-recovery
+- State persistence for share configurations
+- Complete HTTP API for network disk operations
+- Audit logging for all network disk operations
+
+**Files:**
+- `internal/netdisk/netdisk.go` - Network disk management core
+- `internal/api/netdisk_handlers.go` - Network disk HTTP API
+
+**API Endpoints:**
+- `GET /api/v1/netdisk/shares` - List all configured network shares
+- `POST /api/v1/netdisk/shares/add` - Add a new network share
+- `DELETE /api/v1/netdisk/shares/remove?id=<id>` - Remove a share
+- `POST /api/v1/netdisk/mount` - Mount a network share
+- `POST /api/v1/netdisk/unmount` - Unmount a network share
+- `GET /api/v1/netdisk/status?id=<id>` - Get share health status
+
+**Security Features:**
+- Host whitelist validation
+- Mount point whitelist enforcement
+- AES-256 encrypted credential storage
+- Health monitoring with auto-remount capability
+
+---
+
+### ✅ Issue #2 (GH-005): 系统网络管理 - Network Management
+
+**Implemented:**
+- Network interface monitoring (status, MAC, IP addresses, traffic stats)
+- IP configuration management (static/DHCP)
+- Interface enable/disable operations
+- Configuration history and rollback
+- Listening ports monitoring
+- Traffic statistics collection
+- Management interface protection
+- Complete HTTP API for network operations
+- Audit logging for all network changes
+
+**Files:**
+- `internal/netmanager/netmanager.go` - Network management core
+- `internal/api/netmanager_handlers.go` - Network management HTTP API
+
+**API Endpoints:**
+- `GET /api/v1/network/interfaces` - List all network interfaces
+- `GET /api/v1/network/interface?name=<name>` - Get interface details
+- `POST /api/v1/network/config` - Set IP configuration
+- `POST /api/v1/network/rollback` - Rollback to previous configuration
+- `GET /api/v1/network/history?interface=<name>` - Get configuration history
+- `POST /api/v1/network/enable` - Enable an interface
+- `POST /api/v1/network/disable` - Disable an interface
+- `GET /api/v1/network/ports` - List listening ports
+- `GET /api/v1/network/traffic` - Get traffic statistics
+
+**Security Features:**
+- Management interface protection (cannot be disabled)
+- Configuration history with rollback capability
+- Self-disconnection prevention
+- Comprehensive audit trail
+
+---
+
+### ✅ Issue #4 (GH-007): 共享管理 - Samba/NFS Share Management
+
+**Implemented:**
+- Samba and NFS share creation/modification/deletion
+- User and group permission configuration
+- Access mode control (read-only/read-write)
+- Configuration generation with templates
+- Configuration hot reload with testparm validation
+- Atomic configuration rollback
+- Health monitoring for all shares
+- Automatic backup before configuration changes
+- Complete HTTP API for share operations
+- Audit logging for all share operations
+
+**Files:**
+- `internal/sharemanager/sharemanager.go` - Share management core
+- `internal/api/share_handlers.go` - Share management HTTP API
+
+**API Endpoints:**
+- `GET /api/v1/shares` - List all shares
+- `GET /api/v1/shares/get?id=<id>` - Get share details
+- `POST /api/v1/shares/add` - Add a new share
+- `PUT /api/v1/shares/update?id=<id>` - Update a share
+- `DELETE /api/v1/shares/remove?id=<id>` - Remove a share
+- `POST /api/v1/shares/enable?id=<id>` - Enable a share
+- `POST /api/v1/shares/disable?id=<id>` - Disable a share
+- `POST /api/v1/shares/rollback` - Rollback to previous configuration
+
+**Security Features:**
+- Path whitelist validation
+- Configuration testing before apply (testparm for Samba)
+- Automatic backup with rollback capability
+- Health monitoring for share availability
+- Per-share access control
+
+---
+
 ## Deployment
 
 ### Deployment Scripts
@@ -269,10 +373,10 @@ internal/
   server/           # Server infrastructure
   filemanager/      # File operations
   monitor/          # Resource monitoring
-  diskmanager/      # (TODO) Disk management
-  netdisk/          # (TODO) Network disk
-  netmanager/       # (TODO) Network management
-  sharemanager/     # (TODO) Share management
+  diskmanager/      # ✅ Disk management
+  netdisk/          # ✅ Network disk
+  netmanager/       # ✅ Network management
+  sharemanager/     # ✅ Share management
   indexer/          # (TODO) File indexing
   thumbnail/        # (TODO) Thumbnail generation
   scheduler/        # (TODO) Task scheduling
