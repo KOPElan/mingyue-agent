@@ -13,6 +13,7 @@ import (
 	"github.com/KOPElan/mingyue-agent/internal/api"
 	"github.com/KOPElan/mingyue-agent/internal/audit"
 	"github.com/KOPElan/mingyue-agent/internal/config"
+	"github.com/KOPElan/mingyue-agent/internal/diskmanager"
 	"github.com/KOPElan/mingyue-agent/internal/filemanager"
 	"github.com/KOPElan/mingyue-agent/internal/monitor"
 	"google.golang.org/grpc"
@@ -44,6 +45,14 @@ func New(cfg *config.Config, auditLogger *audit.Logger) (*Server, error) {
 		fileMgr := filemanager.New(cfg.Security.AllowedPaths, auditLogger)
 		fileAPI := api.NewFileAPI(fileMgr, auditLogger)
 		fileAPI.Register(mux)
+
+		diskMgr := diskmanager.New(cfg.Security.AllowedPaths)
+		diskAPI := api.NewDiskHandlers(diskMgr, auditLogger)
+		mux.HandleFunc("/api/v1/disk/list", diskAPI.ListDisks)
+		mux.HandleFunc("/api/v1/disk/partitions", diskAPI.ListPartitions)
+		mux.HandleFunc("/api/v1/disk/mount", diskAPI.Mount)
+		mux.HandleFunc("/api/v1/disk/unmount", diskAPI.Unmount)
+		mux.HandleFunc("/api/v1/disk/smart", diskAPI.GetSMART)
 
 		s.httpServer = &http.Server{
 			Addr:         fmt.Sprintf("%s:%d", cfg.Server.ListenAddr, cfg.Server.HTTPPort),
@@ -120,6 +129,14 @@ func (s *Server) Start(ctx context.Context) error {
 			fileMgr := filemanager.New(s.config.Security.AllowedPaths, s.audit)
 			fileAPI := api.NewFileAPI(fileMgr, s.audit)
 			fileAPI.Register(mux)
+
+			diskMgr := diskmanager.New(s.config.Security.AllowedPaths)
+			diskAPI := api.NewDiskHandlers(diskMgr, s.audit)
+			mux.HandleFunc("/api/v1/disk/list", diskAPI.ListDisks)
+			mux.HandleFunc("/api/v1/disk/partitions", diskAPI.ListPartitions)
+			mux.HandleFunc("/api/v1/disk/mount", diskAPI.Mount)
+			mux.HandleFunc("/api/v1/disk/unmount", diskAPI.Unmount)
+			mux.HandleFunc("/api/v1/disk/smart", diskAPI.GetSMART)
 
 			srv := &http.Server{Handler: mux}
 			if err := srv.Serve(lis); err != nil && err != http.ErrServerClosed {
