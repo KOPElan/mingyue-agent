@@ -48,7 +48,6 @@ jobs:
           # Create package directory structure
           mkdir -p "${PACKAGE_DIR}"
           mkdir -p "${PACKAGE_DIR}/docs"
-          mkdir -p "${PACKAGE_DIR}/scripts"
 
           # Copy binary
           cp "${OUTPUT_NAME}" "${PACKAGE_DIR}/mingyue-agent"
@@ -69,10 +68,10 @@ jobs:
           cp docs/DEPLOYMENT.md "${PACKAGE_DIR}/docs/"
 
           # Copy installation scripts
-          cp scripts/install.sh "${PACKAGE_DIR}/scripts/"
-          cp scripts/uninstall.sh "${PACKAGE_DIR}/scripts/"
-          chmod +x "${PACKAGE_DIR}/scripts/install.sh"
-          chmod +x "${PACKAGE_DIR}/scripts/uninstall.sh"
+          cp scripts/install.sh "${PACKAGE_DIR}/"
+          cp scripts/uninstall.sh "${PACKAGE_DIR}/"
+          chmod +x "${PACKAGE_DIR}/install.sh"
+          chmod +x "${PACKAGE_DIR}/uninstall.sh"
 
           # Create README for the package
           cat > "${PACKAGE_DIR}/INSTALL.txt" << 'EOF'
@@ -82,8 +81,8 @@ jobs:
           This package contains:
           - mingyue-agent: The main binary
           - config.example.yaml: Example configuration file
-          - scripts/install.sh: Automated installation script (Linux only)
-          - scripts/uninstall.sh: Automated uninstallation script (Linux only)
+          - install.sh: Automated installation script (Linux only)
+          - uninstall.sh: Automated uninstallation script (Linux only)
           - docs/: Complete documentation
 
           Quick Start (Manual Installation):
@@ -100,7 +99,7 @@ jobs:
 
           Automated Installation (Linux with systemd):
           1. Run the installation script as root:
-             sudo ./scripts/install.sh
+             sudo ./install.sh
 
           2. Edit the configuration:
              sudo nano /etc/mingyue-agent/config.yaml
@@ -113,7 +112,7 @@ jobs:
 
           Uninstallation:
           - Run the uninstallation script as root:
-            sudo ./scripts/uninstall.sh
+            sudo ./uninstall.sh
 
           For more information, see:
           - README.md: Project overview and features
@@ -157,8 +156,8 @@ jobs:
             Each release package includes:
             - `mingyue-agent`: The main binary
             - `config.example.yaml`: Example configuration file
-            - `scripts/install.sh`: Automated installation script (Linux/systemd)
-            - `scripts/uninstall.sh`: Automated uninstallation script
+            - `install.sh`: Automated installation script (Linux/systemd)
+            - `uninstall.sh`: Automated uninstallation script
             - `docs/`: Complete documentation (API, Architecture, Deployment)
             - `INSTALL.txt`: Quick installation guide
             - `README.md`, `LICENSE`, `CHANGELOG.md`: Project documentation
@@ -173,7 +172,7 @@ jobs:
             cd mingyue-agent-${{ github.event.inputs.version }}-linux-amd64
 
             # Run the installer
-            sudo ./scripts/install.sh
+            sudo ./install.sh
 
             # Edit configuration
             sudo nano /etc/mingyue-agent/config.yaml
