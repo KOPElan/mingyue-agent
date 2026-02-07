@@ -34,13 +34,20 @@ Mingyue Agent is the core local management service for the Mingyue Portal home s
 - **Health Checks**: `/healthz` with degraded status on resource thresholds
 - **Monitoring APIs**: Detailed stats and health status endpoints
 
-### 🔮 Planned Features
-- **Network Disk Management**: CIFS/NFS mounting, credential encryption, auto-recovery
-- **Network Management**: Interface monitoring, IP configuration, traffic stats
-- **Share Management**: Samba/NFS share configuration and management
-- **Indexing & Thumbnails**: Media file indexing and thumbnail generation
-- **Task Scheduling**: Distributed task orchestration with offline tolerance
-- **Enhanced Security**: mTLS authentication, token auth, privilege separation
+### 🔮 Implemented Features (v1.0 Complete!)
+- ✅ **Network Disk Management**: CIFS/NFS mounting, credential encryption, auto-recovery
+- ✅ **Network Management**: Interface monitoring, IP configuration, traffic stats
+- ✅ **Share Management**: Samba/NFS share configuration and management
+- ✅ **Indexing & Thumbnails**: Media file indexing and thumbnail generation
+- ✅ **Task Scheduling**: Distributed task orchestration with offline tolerance
+- ✅ **Security Hardening**: Token-based authentication, session management, audit logging
+- ✅ **OpenAPI Documentation**: Interactive Swagger UI for API exploration
+
+### 🔮 Planned Future Features (v1.1+)
+- **v1.1**: Enhanced mTLS authentication, privilege separation
+- **v1.2**: Client library, advanced CLI features
+- **v1.3**: Full-text search, video transcoding, distributed execution
+- **v2.0**: Plugin system, metrics export, advanced security features
 
 ## 🚀 Quick Start
 
@@ -122,10 +129,16 @@ audit:
 ## 📖 Documentation
 
 - **[API Documentation](docs/API.md)**: Complete API reference with examples
+- **[OpenAPI/Swagger](http://localhost:8080/swagger/)**: Interactive API documentation (when agent is running)
 - **[Architecture Guide](docs/ARCHITECTURE.md)**: Technical architecture and design
 - **[Implementation Progress](IMPLEMENTATION.md)**: Current status and roadmap
+- **[Deployment Guide](docs/DEPLOYMENT.md)**: Installation and deployment instructions
 
 ## 🔌 API Usage Examples
+
+### Interactive API Documentation
+
+Once the agent is running, visit **http://localhost:8080/swagger/** for interactive API documentation powered by Swagger UI. You can explore all endpoints, view request/response schemas, and test API calls directly from your browser.
 
 ### Health Check
 
@@ -215,6 +228,49 @@ curl -X POST -H "Content-Type: application/json" \
   http://localhost:8080/api/v1/disk/unmount
 ```
 
+### Task Scheduling
+
+```bash
+# Add a new scheduled task
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"name":"Daily Cleanup","type":"cleanup","schedule":"daily","enabled":true}' \
+  http://localhost:8080/api/v1/scheduler/tasks/add
+
+# List all tasks
+curl http://localhost:8080/api/v1/scheduler/tasks
+
+# Execute a task manually
+curl -X POST "http://localhost:8080/api/v1/scheduler/tasks/execute?id=task-123"
+```
+
+### File Indexing and Thumbnails
+
+```bash
+# Scan files for indexing
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"paths":["/data"],"recursive":true,"incremental":true}' \
+  http://localhost:8080/api/v1/indexer/scan
+
+# Search indexed files
+curl "http://localhost:8080/api/v1/indexer/search?q=photo&limit=10"
+
+# Generate thumbnail
+curl -X POST "http://localhost:8080/api/v1/thumbnail/generate?path=/data/image.jpg"
+```
+
+### Authentication
+
+```bash
+# Create API token
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"user_id":"admin","name":"my-token","expires_in":31536000}' \
+  http://localhost:8080/api/v1/auth/tokens/create
+
+# Use token in requests
+curl -H "X-API-Key: your-token-here" \
+  http://localhost:8080/api/v1/files/list?path=/data
+```
+
 See [API Documentation](docs/API.md) for complete endpoint reference.
 
 ## 🏗️ Project Structure
@@ -245,6 +301,9 @@ See [API Documentation](docs/API.md) for complete endpoint reference.
 
 ```bash
 make build
+
+# Generate OpenAPI/Swagger documentation
+make swagger
 ```
 
 ### Run Tests
@@ -310,23 +369,30 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 🗺️ Roadmap
 
-### Current Status (v1.0 - 30% Complete)
+### Current Status (v1.0 - 100% Complete ✅)
 
 - ✅ Multi-protocol API support (HTTP, gRPC, UDS)
 - ✅ Secure file management with validation
 - ✅ System resource monitoring
 - ✅ Disk management with SMART support
+- ✅ Network disk management (CIFS/NFS)
+- ✅ Network interface management
+- ✅ Share management (Samba/NFS)
+- ✅ File indexing and thumbnail generation
+- ✅ Task scheduling and orchestration
+- ✅ Token-based authentication and sessions
 - ✅ Audit logging system
+- ✅ OpenAPI/Swagger documentation
 - ✅ Deployment automation scripts
 
 ### Next Milestones
 
-- **v1.1**: Network disk management (CIFS/NFS mounting)
-- **v1.2**: Network management (interface, IP config)
-- **v1.3**: Share management (Samba, NFS)
-- **v1.4**: File indexing and thumbnails
-- **v1.5**: Task scheduling system
-- **v2.0**: Enhanced security (mTLS, privilege separation)
+- **v1.1**: Enhanced mTLS authentication, privilege separation
+- **v1.2**: Go client library, advanced CLI features
+- **v1.3**: Full-text search, video transcoding
+- **v1.4**: Distributed task execution
+- **v1.5**: Plugin system for extensibility
+- **v2.0**: Advanced security features, metrics export
 
 See [IMPLEMENTATION.md](IMPLEMENTATION.md) for detailed progress tracking.
 
