@@ -19,11 +19,16 @@ func (m *Monitor) getMemoryStats() (MemoryStats, error) {
 	free := si.Freeram * uint64(si.Unit)
 	used := total - free
 
+	usedPercent := 0.0
+	if total > 0 {
+		usedPercent = float64(used) / float64(total) * 100
+	}
+
 	stats := MemoryStats{
 		Total:       total,
 		Available:   free,
 		Used:        used,
-		UsedPercent: float64(used) / float64(total) * 100,
+		UsedPercent: usedPercent,
 		SwapTotal:   si.Totalswap * uint64(si.Unit),
 		SwapUsed:    (si.Totalswap - si.Freeswap) * uint64(si.Unit),
 	}
@@ -42,11 +47,16 @@ func (m *Monitor) getDiskStats(path string) (DiskStats, error) {
 	free := stat.Bfree * uint64(stat.Bsize)
 	used := total - free
 
+	usedPercent := 0.0
+	if total > 0 {
+		usedPercent = float64(used) / float64(total) * 100
+	}
+
 	stats := DiskStats{
 		Total:       total,
 		Free:        free,
 		Used:        used,
-		UsedPercent: float64(used) / float64(total) * 100,
+		UsedPercent: usedPercent,
 	}
 
 	return stats, nil

@@ -33,11 +33,16 @@ func (m *Monitor) getDiskStats(path string) (DiskStats, error) {
 	free := stat.Bfree * uint64(stat.Bsize)
 	used := total - free
 
+	usedPercent := 0.0
+	if total > 0 {
+		usedPercent = float64(used) / float64(total) * 100
+	}
+
 	stats := DiskStats{
 		Total:       total,
 		Free:        free,
 		Used:        used,
-		UsedPercent: float64(used) / float64(total) * 100,
+		UsedPercent: usedPercent,
 	}
 
 	return stats, nil
