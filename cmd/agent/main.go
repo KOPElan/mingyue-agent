@@ -42,6 +42,23 @@ func startCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start the agent daemon",
+		Long: `Start the Mingyue Agent daemon process.
+
+The agent will start HTTP API server (default port 8080), gRPC server (default port 9090),
+and Unix domain socket for local communication. All servers can be configured via the config file.
+
+Examples:
+  # Start with default config
+  mingyue-agent start
+
+  # Start with custom config
+  mingyue-agent start --config /path/to/config.yaml
+  mingyue-agent start -c ./my-config.yaml
+
+  # Generate example config
+  cp config.example.yaml my-config.yaml
+
+The daemon will run in the foreground and can be stopped with Ctrl+C (SIGINT) or SIGTERM.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load(configFile)
 			if err != nil {
@@ -87,9 +104,16 @@ func versionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
+		Long: `Print detailed version information including build time and Git commit.
+
+Examples:
+  mingyue-agent version`,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf("Mingyue Agent %s\n", version)
 			fmt.Printf("Build Time: %s\n", buildTime)
+			fmt.Printf("\nFor more information, visit:\n")
+			fmt.Printf("  Documentation: https://github.com/KOPElan/mingyue-agent\n")
+			fmt.Printf("  API Reference: docs/API.md\n")
 		},
 	}
 }
