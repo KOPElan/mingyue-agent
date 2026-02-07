@@ -30,18 +30,8 @@ type RegistrationInfo struct {
 }
 
 func RegisterHTTPHandlers(mux *http.ServeMux, auditLogger *audit.Logger) {
-	mux.HandleFunc("/healthz", healthHandler)
 	mux.HandleFunc("/api/v1/register", registrationHandler(auditLogger))
 	mux.HandleFunc("/api/v1/status", statusHandler)
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	resp := HealthResponse{
-		Status:    "ok",
-		Timestamp: time.Now(),
-		Version:   "1.0.0",
-	}
-	writeJSON(w, http.StatusOK, Response{Success: true, Data: resp})
 }
 
 func registrationHandler(auditLogger *audit.Logger) http.HandlerFunc {

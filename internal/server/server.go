@@ -14,6 +14,7 @@ import (
 	"github.com/KOPElan/mingyue-agent/internal/audit"
 	"github.com/KOPElan/mingyue-agent/internal/config"
 	"github.com/KOPElan/mingyue-agent/internal/filemanager"
+	"github.com/KOPElan/mingyue-agent/internal/monitor"
 	"google.golang.org/grpc"
 )
 
@@ -35,6 +36,10 @@ func New(cfg *config.Config, auditLogger *audit.Logger) (*Server, error) {
 	if cfg.API.EnableHTTP {
 		mux := http.NewServeMux()
 		api.RegisterHTTPHandlers(mux, auditLogger)
+
+		mon := monitor.New()
+		monitorAPI := api.NewMonitorAPI(mon, auditLogger)
+		monitorAPI.Register(mux)
 
 		fileMgr := filemanager.New(cfg.Security.AllowedPaths, auditLogger)
 		fileAPI := api.NewFileAPI(fileMgr, auditLogger)
@@ -107,6 +112,10 @@ func (s *Server) Start(ctx context.Context) error {
 
 			mux := http.NewServeMux()
 			api.RegisterHTTPHandlers(mux, s.audit)
+
+			mon := monitor.New()
+			monitorAPI := api.NewMonitorAPI(mon, s.audit)
+			monitorAPI.Register(mux)
 
 			fileMgr := filemanager.New(s.config.Security.AllowedPaths, s.audit)
 			fileAPI := api.NewFileAPI(fileMgr, s.audit)
