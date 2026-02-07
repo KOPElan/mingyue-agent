@@ -188,10 +188,3 @@ func (h *IndexerHandlers) CleanupCache(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, Response{Success: true})
 }
-
-func getUser(r *http.Request) string {
-	if user := r.Header.Get("X-User"); user != "" {
-		return user
-	}
-	return "unknown"
-}
