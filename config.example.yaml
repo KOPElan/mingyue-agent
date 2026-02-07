@@ -1,0 +1,28 @@
+server:
+  listen_addr: "0.0.0.0"
+  http_port: 8080
+  grpc_port: 9090
+  uds_path: "/var/run/mingyue-agent/agent.sock"
+
+api:
+  enable_http: true
+  enable_grpc: true
+  enable_uds: true
+  tls_cert: ""
+  tls_key: ""
+
+audit:
+  enabled: true
+  log_path: "/var/log/mingyue-agent/audit.log"
+  remote_push: false
+  remote_url: ""
+
+security:
+  enable_mtls: false
+  token_auth: true
+  allowed_paths:
+    - "/home"
+    - "/data"
+  max_upload_size: 10737418240  # 10GB
+  rate_limit_per_min: 1000
+  require_confirm: true
