@@ -14,34 +14,34 @@ import (
 
 // Partition represents a disk partition
 type Partition struct {
-	Name       string `json:"name"`
-	Device     string `json:"device"`
-	MountPoint string `json:"mount_point"`
-	FileSystem string `json:"filesystem"`
-	Size       uint64 `json:"size"`
-	Used       uint64 `json:"used"`
-	Available  uint64 `json:"available"`
+	Name       string  `json:"name"`
+	Device     string  `json:"device"`
+	MountPoint string  `json:"mount_point"`
+	FileSystem string  `json:"filesystem"`
+	Size       uint64  `json:"size"`
+	Used       uint64  `json:"used"`
+	Available  uint64  `json:"available"`
 	UsedPct    float64 `json:"used_percent"`
-	UUID       string `json:"uuid"`
-	Label      string `json:"label"`
-	ReadOnly   bool   `json:"read_only"`
+	UUID       string  `json:"uuid"`
+	Label      string  `json:"label"`
+	ReadOnly   bool    `json:"read_only"`
 }
 
 // DiskInfo represents physical disk information
 type DiskInfo struct {
-	Device     string       `json:"device"`
-	Model      string       `json:"model"`
-	Size       uint64       `json:"size"`
-	Partitions []Partition  `json:"partitions"`
-	SMART      *SMARTInfo   `json:"smart,omitempty"`
+	Device     string      `json:"device"`
+	Model      string      `json:"model"`
+	Size       uint64      `json:"size"`
+	Partitions []Partition `json:"partitions"`
+	SMART      *SMARTInfo  `json:"smart,omitempty"`
 }
 
 // SMARTInfo represents SMART health information
 type SMARTInfo struct {
-	Healthy     bool    `json:"healthy"`
-	Temperature int     `json:"temperature"`
+	Healthy      bool   `json:"healthy"`
+	Temperature  int    `json:"temperature"`
 	PowerOnHours int    `json:"power_on_hours"`
-	RawData     string  `json:"raw_data,omitempty"`
+	RawData      string `json:"raw_data,omitempty"`
 }
 
 // MountOptions represents mount operation options
