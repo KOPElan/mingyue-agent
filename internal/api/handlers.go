@@ -32,33 +32,9 @@ type RegistrationInfo struct {
 func RegisterHTTPHandlers(mux *http.ServeMux, auditLogger *audit.Logger) {
 	mux.HandleFunc("/api/v1/register", registrationHandler(auditLogger))
 	mux.HandleFunc("/api/v1/status", statusHandler)
-	mux.HandleFunc("/healthz", healthHandler)
 }
 
-// healthHandler godoc
-// @Summary Health check endpoint
-// @Description Returns the current health status of the agent
-// @Tags health
-// @Produce json
-// @Success 200 {object} Response{data=HealthResponse}
-// @Router /healthz [get]
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, Response{
-			Success: false,
-			Error:   "method not allowed",
-		})
-		return
-	}
 
-	health := HealthResponse{
-		Status:    "ok",
-		Timestamp: time.Now(),
-		Version:   "1.0.0",
-	}
-
-	writeJSON(w, http.StatusOK, Response{Success: true, Data: health})
-}
 
 // registrationHandler godoc
 // @Summary Register agent with WebUI
