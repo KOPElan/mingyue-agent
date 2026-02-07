@@ -77,26 +77,54 @@
 
 ---
 
+### ✅ Issue #9 (GH-003): 磁盘管理 - Disk Management
+
+**Implemented:**
+- Partition detection and listing using /proc/mounts and lsblk
+- Mount/unmount operations with whitelist-based safety checks
+- SMART information reading via smartctl
+- Disk usage statistics (size, used, available, percentage)
+- UUID and label detection using blkid
+- Complete HTTP API for disk operations
+- Audit logging for all disk operations
+- Security features: allowed mount points whitelist
+
+**Files:**
+- `internal/diskmanager/diskmanager.go` - Core disk operations
+- `internal/api/disk_handlers.go` - Disk HTTP API
+
+**API Endpoints:**
+- `GET /api/v1/disk/list` - List all physical disks
+- `GET /api/v1/disk/partitions` - List all partitions
+- `POST /api/v1/disk/mount` - Mount a device
+- `POST /api/v1/disk/unmount` - Unmount a device
+- `GET /api/v1/disk/smart?device=<path>` - Get SMART info
+
+**Note:** Multi-step confirmation for dangerous operations to be implemented in future enhancement.
+
+---
+
+## Deployment
+
+### Deployment Scripts
+
+**Implemented:**
+- Installation script (`scripts/install.sh`) with systemd integration
+- Uninstallation script (`scripts/uninstall.sh`) with cleanup
+- Security hardening in systemd service file
+- Automatic directory and user creation
+- Configuration management
+
+**Features:**
+- Systemd service with security hardening
+- Non-root execution with proper permissions
+- Automatic backup of existing configurations
+- Clean uninstallation with user confirmation
+- Resource limits and security constraints
+
+---
+
 ## Remaining Issues (In Priority Order)
-
-### Issue #9 (GH-003): 磁盘管理 - Disk Management
-**Priority:** Medium
-**Dependencies:** File management (completed)
-
-**Requirements:**
-- Partition detection and display
-- Mount/unmount operations with safety checks
-- SMART information reading (via smartctl)
-- Multi-step confirmation for dangerous operations
-- Disk power management (optional)
-- Mount point monitoring and anomaly detection
-
-**Suggested Implementation:**
-- Package: `internal/diskmanager/`
-- Use `lsblk`, `blkid`, `smartctl` for disk info
-- Implement confirmation workflow for destructive operations
-- Add mount point health monitoring
-- Integrate with audit system
 
 ---
 

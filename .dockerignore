@@ -1,0 +1,50 @@
+# Docker ignore patterns
+
+# Git files
+.git
+.gitignore
+.github
+
+# Build artifacts
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation (included in image via COPY)
+# But exclude temporary/cache files
+*.md~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Config files (we copy example)
+config.yaml
+
+# CI/CD
+.github/workflows/

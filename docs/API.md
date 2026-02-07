@@ -535,10 +535,229 @@ API requests are subject to rate limiting based on configuration:
 - Default: 1000 requests per minute per client
 - Configurable via `security.rate_limit_per_min`
 
+## Disk Management APIs
+
+### GET /api/v1/disk/list
+
+Lists all physical disks with partitions and metadata.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "device": "/dev/sda",
+      "model": "Samsung SSD 860",
+      "size": 1000204886016,
+      "partitions": [
+        {
+          "name": "sda1",
+          "device": "/dev/sda1",
+          "mount_point": "/",
+          "filesystem": "ext4",
+          "size": 1000204886016,
+          "used": 450000000000,
+          "available": 550000000000,
+          "used_percent": 45.0,
+          "uuid": "1234-5678-90AB-CDEF",
+          "label": "root",
+          "read_only": false
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Audit Log:** `disk.list`
+
+---
+
+### GET /api/v1/disk/partitions
+
+Lists all mounted partitions with usage statistics.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "name": "sda1",
+      "device": "/dev/sda1",
+      "mount_point": "/",
+      "filesystem": "ext4",
+      "size": 1000204886016,
+      "used": 450000000000,
+      "available": 550000000000,
+      "used_percent": 45.0,
+      "uuid": "1234-5678-90AB-CDEF",
+      "label": "root",
+      "read_only": false
+    }
+  ]
+}
+```
+
+**Field Descriptions:**
+- `name`: Partition name (e.g., sda1)
+- `device`: Full device path
+- `mount_point`: Where the partition is mounted
+- `filesystem`: Filesystem type (ext4, xfs, ntfs, etc.)
+- `size`: Total size in bytes
+- `used`: Used space in bytes
+- `available`: Available space in bytes
+- `used_percent`: Usage percentage
+- `uuid`: Partition UUID
+- `label`: Partition label/name
+- `read_only`: Whether mounted as read-only
+
+**Audit Log:** `disk.list_partitions`
+
+---
+
+### POST /api/v1/disk/mount
+
+Mounts a device to a specified mount point.
+
+**Request Body:**
+```json
+{
+  "device": "/dev/sdb1",
+  "mount_point": "/mnt/data",
+  "filesystem": "ext4",
+  "options": ["rw", "noexec"],
+  "read_only": false
+}
+```
+
+**Parameters:**
+- `device` (required): Device path to mount
+- `mount_point` (required): Target mount point
+- `filesystem` (optional): Filesystem type (auto-detected if omitted)
+- `options` (optional): Mount options array
+- `read_only` (optional): Mount as read-only
+
+**Security:**
+- Mount point must be in `security.allowed_paths` whitelist
+- Creates mount point directory if it doesn't exist
+- Validates device exists
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "device mounted successfully"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Missing required parameters
+- `403 Forbidden`: Mount point not in allowed list
+- `500 Internal Server Error`: Mount operation failed
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"device":"/dev/sdb1","mount_point":"/mnt/backup","filesystem":"ext4"}' \
+  http://localhost:8080/api/v1/disk/mount
+```
+
+**Audit Log:** `disk.mount` with device and mount point details
+
+---
+
+### POST /api/v1/disk/unmount
+
+Unmounts a device or mount point.
+
+**Request Body:**
+```json
+{
+  "target": "/mnt/data",
+  "force": false
+}
+```
+
+**Parameters:**
+- `target` (required): Device path or mount point to unmount
+- `force` (optional): Force unmount even if busy
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "device unmounted successfully"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Missing target parameter
+- `500 Internal Server Error`: Unmount operation failed
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"target":"/mnt/backup","force":false}' \
+  http://localhost:8080/api/v1/disk/unmount
+```
+
+**Audit Log:** `disk.unmount` with target and force flag
+
+---
+
+### GET /api/v1/disk/smart
+
+Retrieves SMART health information for a disk.
+
+**Query Parameters:**
+- `device` (required): Device path (e.g., /dev/sda)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "healthy": true,
+    "temperature": 35,
+    "power_on_hours": 5000,
+    "raw_data": "smartctl output..."
+  }
+}
+```
+
+**Field Descriptions:**
+- `healthy`: Overall health status (true if PASSED)
+- `temperature`: Current temperature in Celsius
+- `power_on_hours`: Total hours disk has been powered on
+- `raw_data`: Full smartctl output for advanced analysis
+
+**Requirements:**
+- Requires `smartctl` (smartmontools package) installed
+- May require elevated permissions for some devices
+
+**Example:**
+```bash
+curl "http://localhost:8080/api/v1/disk/smart?device=/dev/sda"
+```
+
+**Error Responses:**
+- `400 Bad Request`: Missing device parameter
+- `500 Internal Server Error`: smartctl command failed or not installed
+
+**Audit Log:** `disk.smart` with device path
+
+---
+
 ## Future APIs
 
 Planned API additions:
-- Disk management (partition, mount, SMART)
+- Network disk management (CIFS/NFS mounting)
 - Network management (interface, IP configuration)
 - Share management (Samba, NFS)
 - File indexing and search
