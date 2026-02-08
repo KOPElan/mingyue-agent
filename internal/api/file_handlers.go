@@ -10,14 +10,16 @@ import (
 )
 
 type FileAPI struct {
-	manager *filemanager.Manager
-	audit   *audit.Logger
+	manager       *filemanager.Manager
+	audit         *audit.Logger
+	maxUploadSize int64
 }
 
-func NewFileAPI(manager *filemanager.Manager, auditLogger *audit.Logger) *FileAPI {
+func NewFileAPI(manager *filemanager.Manager, auditLogger *audit.Logger, maxUploadSize int64) *FileAPI {
 	return &FileAPI{
-		manager: manager,
-		audit:   auditLogger,
+		manager:       manager,
+		audit:         auditLogger,
+		maxUploadSize: maxUploadSize,
 	}
 }
 
@@ -214,7 +216,10 @@ func (api *FileAPI) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	maxSize := int64(10 * 1024 * 1024 * 1024)
+	maxSize := api.maxUploadSize
+	if maxSize <= 0 {
+		maxSize = 10 * 1024 * 1024 * 1024
+	}
 	if maxSizeStr := r.URL.Query().Get("max_size"); maxSizeStr != "" {
 		if size, err := strconv.ParseInt(maxSizeStr, 10, 64); err == nil {
 			maxSize = size

@@ -25,6 +25,13 @@ func NewIndexerHandlers(idx *indexer.Indexer, thumb *thumbnail.Generator, auditL
 	}
 }
 
+func (h *IndexerHandlers) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/v1/indexer/scan", h.ScanFiles)
+	mux.HandleFunc("/api/v1/indexer/search", h.SearchFiles)
+	mux.HandleFunc("/api/v1/thumbnail/generate", h.GenerateThumbnail)
+	mux.HandleFunc("/api/v1/thumbnail/cleanup", h.CleanupCache)
+}
+
 // ScanFiles godoc
 // @Summary Scan files for indexing
 // @Description Scans specified paths and indexes file metadata

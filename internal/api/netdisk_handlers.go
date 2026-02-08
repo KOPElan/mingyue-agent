@@ -23,6 +23,15 @@ func NewNetDiskHandlers(manager *netdisk.Manager, auditLogger *audit.Logger) *Ne
 	}
 }
 
+func (h *NetDiskHandlers) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/v1/netdisk/shares", h.ListShares)
+	mux.HandleFunc("/api/v1/netdisk/shares/add", h.AddShare)
+	mux.HandleFunc("/api/v1/netdisk/shares/remove", h.RemoveShare)
+	mux.HandleFunc("/api/v1/netdisk/mount", h.MountShare)
+	mux.HandleFunc("/api/v1/netdisk/unmount", h.UnmountShare)
+	mux.HandleFunc("/api/v1/netdisk/status", h.GetShareStatus)
+}
+
 // ListShares handles GET /api/v1/netdisk/shares
 func (h *NetDiskHandlers) ListShares(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {

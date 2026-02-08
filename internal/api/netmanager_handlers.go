@@ -23,6 +23,18 @@ func NewNetManagerHandlers(manager *netmanager.Manager, auditLogger *audit.Logge
 	}
 }
 
+func (h *NetManagerHandlers) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/v1/network/interfaces", h.ListInterfaces)
+	mux.HandleFunc("/api/v1/network/interface", h.GetInterface)
+	mux.HandleFunc("/api/v1/network/config", h.SetIPConfig)
+	mux.HandleFunc("/api/v1/network/rollback", h.RollbackConfig)
+	mux.HandleFunc("/api/v1/network/history", h.ListConfigHistory)
+	mux.HandleFunc("/api/v1/network/enable", h.EnableInterface)
+	mux.HandleFunc("/api/v1/network/disable", h.DisableInterface)
+	mux.HandleFunc("/api/v1/network/ports", h.ListListeningPorts)
+	mux.HandleFunc("/api/v1/network/traffic", h.GetTrafficStats)
+}
+
 // ListInterfaces handles GET /api/v1/network/interfaces
 func (h *NetManagerHandlers) ListInterfaces(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {

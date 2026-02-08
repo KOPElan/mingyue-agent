@@ -49,6 +49,8 @@ var (
 	buildTime = "unknown"
 )
 
+const defaultConfigPath = "/etc/mingyue-agent/config.yaml"
+
 func main() {
 	rootCmd := &cobra.Command{
 		Use:   "mingyue-agent",
@@ -92,7 +94,8 @@ Examples:
 
 The daemon will run in the foreground and can be stopped with Ctrl+C (SIGINT) or SIGTERM.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load(configFile)
+			resolvedConfig := resolveConfigPath(configFile)
+			cfg, err := config.Load(resolvedConfig)
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)
 			}
@@ -127,9 +130,28 @@ The daemon will run in the foreground and can be stopped with Ctrl+C (SIGINT) or
 		},
 	}
 
-	cmd.Flags().StringVarP(&configFile, "config", "c", "/etc/mingyue-agent/config.yaml", "Path to config file")
+	cmd.Flags().StringVarP(&configFile, "config", "c", defaultConfigPath, "Path to config file")
 
 	return cmd
+}
+
+func resolveConfigPath(configFile string) string {
+	if configFile == "" {
+		return ""
+	}
+	if configFile != defaultConfigPath {
+		return configFile
+	}
+
+	if _, err := os.Stat(configFile); err == nil {
+		return configFile
+	}
+
+	if _, err := os.Stat("config.yaml"); err == nil {
+		return "config.yaml"
+	}
+
+	return configFile
 }
 
 func versionCmd() *cobra.Command {
