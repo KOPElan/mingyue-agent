@@ -35,7 +35,7 @@ sudo ./scripts/install.sh
 
 The script will:
 - Create a dedicated system user (`mingyue-agent`)
-- Set up directories (`/etc/mingyue-agent`, `/var/log/mingyue-agent`, `/var/run/mingyue-agent`)
+- Set up directories (`/etc/mingyue-agent`, `/var/log/mingyue-agent`, `/var/run/mingyue-agent`, `/var/lib/mingyue-agent`)
 - Install the binary to `/usr/local/bin`
 - Create a systemd service with security hardening
 - Enable the service for automatic startup
@@ -78,8 +78,10 @@ sudo useradd --system --no-create-home --shell /usr/sbin/nologin mingyue-agent
 sudo mkdir -p /etc/mingyue-agent
 sudo mkdir -p /var/log/mingyue-agent
 sudo mkdir -p /var/run/mingyue-agent
+sudo mkdir -p /var/lib/mingyue-agent
 sudo chown -R mingyue-agent:mingyue-agent /var/log/mingyue-agent
 sudo chown -R mingyue-agent:mingyue-agent /var/run/mingyue-agent
+sudo chown -R mingyue-agent:mingyue-agent /var/lib/mingyue-agent
 ```
 
 4. Install binary:
@@ -119,7 +121,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/log/mingyue-agent /var/run/mingyue-agent
+ReadWritePaths=/var/log/mingyue-agent /var/run/mingyue-agent /var/lib/mingyue-agent
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true

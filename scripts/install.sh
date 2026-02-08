@@ -15,6 +15,7 @@ INSTALL_DIR="/usr/local/bin"
 CONFIG_DIR="/etc/mingyue-agent"
 LOG_DIR="/var/log/mingyue-agent"
 RUN_DIR="/var/run/mingyue-agent"
+DATA_DIR="/var/lib/mingyue-agent"
 SYSTEMD_DIR="/etc/systemd/system"
 USER="mingyue-agent"
 GROUP="mingyue-agent"
@@ -71,12 +72,15 @@ create_directories() {
     mkdir -p "$CONFIG_DIR"
     mkdir -p "$LOG_DIR"
     mkdir -p "$RUN_DIR"
+    mkdir -p "$DATA_DIR"
 
     chown -R "$USER:$GROUP" "$LOG_DIR"
     chown -R "$USER:$GROUP" "$RUN_DIR"
+    chown -R "$USER:$GROUP" "$DATA_DIR"
     chmod 755 "$CONFIG_DIR"
     chmod 755 "$LOG_DIR"
     chmod 755 "$RUN_DIR"
+    chmod 755 "$DATA_DIR"
 }
 
 install_binary() {
@@ -146,7 +150,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=$LOG_DIR $RUN_DIR
+ReadWritePaths=$LOG_DIR $RUN_DIR $DATA_DIR
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true

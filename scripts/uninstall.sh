@@ -14,6 +14,7 @@ INSTALL_DIR="/usr/local/bin"
 CONFIG_DIR="/etc/mingyue-agent"
 LOG_DIR="/var/log/mingyue-agent"
 RUN_DIR="/var/run/mingyue-agent"
+DATA_DIR="/var/lib/mingyue-agent"
 SYSTEMD_DIR="/etc/systemd/system"
 USER="mingyue-agent"
 
@@ -103,6 +104,20 @@ remove_run_dir() {
     fi
 }
 
+remove_data_dir() {
+    if [[ -d "$DATA_DIR" ]]; then
+        log_warn "Data directory: $DATA_DIR"
+        read -p "Remove data directory? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            log_info "Removing data directory..."
+            rm -rf "$DATA_DIR"
+        else
+            log_info "Keeping data directory"
+        fi
+    fi
+}
+
 remove_user() {
     if id "$USER" &>/dev/null; then
         read -p "Remove user $USER? (y/N): " -n 1 -r
@@ -126,6 +141,7 @@ main() {
     remove_run_dir
     remove_config
     remove_logs
+    remove_data_dir
     remove_user
 
     log_info "Uninstallation completed"

@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -62,6 +64,15 @@ type Config struct {
 func New(config Config) (*AuthManager, error) {
 	if config.DBPath == "" {
 		config.DBPath = "/var/lib/mingyue-agent/auth.db"
+	}
+
+	// Try to create DB directory, fallback to temp dir on read-only filesystem
+	dbDir := filepath.Dir(config.DBPath)
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		config.DBPath = filepath.Join(os.TempDir(), "mingyue-agent", filepath.Base(config.DBPath))
+		if err := os.MkdirAll(filepath.Dir(config.DBPath), 0755); err != nil {
+			return nil, fmt.Errorf("create database directory: %w", err)
+		}
 	}
 
 	db, err := sql.Open("sqlite3", config.DBPath)
