@@ -51,6 +51,13 @@ var (
 
 const defaultConfigPath = "/etc/mingyue-agent/config.yaml"
 
+var (
+	// Global flags for API client
+	apiURL  string
+	apiKey  string
+	apiUser string
+)
+
 func main() {
 	rootCmd := &cobra.Command{
 		Use:   "mingyue-agent",
@@ -61,13 +68,32 @@ local privileged operations capabilities.`,
 		Version: fmt.Sprintf("%s (built at %s)", version, buildTime),
 	}
 
+	// Add global flags
+	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "http://localhost:8080", "API server URL")
+	rootCmd.PersistentFlags().StringVar(&apiKey, "api-key", "", "API authentication key")
+	rootCmd.PersistentFlags().StringVar(&apiUser, "user", "", "User identifier for requests")
+
+	// Add daemon commands
 	rootCmd.AddCommand(startCmd())
 	rootCmd.AddCommand(versionCmd())
+
+	// Add management commands
+	rootCmd.AddCommand(filesCmd())
+	rootCmd.AddCommand(diskCmd())
+	rootCmd.AddCommand(monitorCmd())
+	rootCmd.AddCommand(indexerCmd())
+	rootCmd.AddCommand(schedulerCmd())
+	rootCmd.AddCommand(authCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// getAPIClient returns a configured API client using global flags
+func getAPIClient() *APIClient {
+	return NewAPIClient(apiURL, apiKey, apiUser)
 }
 
 func startCmd() *cobra.Command {
