@@ -39,8 +39,8 @@ COPY config.example.yaml /etc/mingyue-agent/config.yaml
 
 # Create non-root user
 RUN adduser -D -s /sbin/nologin mingyue-agent && \
-    mkdir -p /var/log/mingyue-agent /var/run/mingyue-agent /mnt/data && \
-    chown -R mingyue-agent:mingyue-agent /var/log/mingyue-agent /var/run/mingyue-agent
+    mkdir -p /var/log/mingyue-agent /var/run/mingyue-agent /var/lib/mingyue-agent /mnt/data && \
+    chown -R mingyue-agent:mingyue-agent /var/log/mingyue-agent /var/run/mingyue-agent /var/lib/mingyue-agent
 
 # Switch to non-root user
 USER mingyue-agent
