@@ -113,7 +113,7 @@ audit:
 ### Running
 
 ```bash
-# Start the agent
+# Start the agent daemon
 ./bin/mingyue-agent start --config config.yaml
 
 # Or use the default config location
@@ -127,8 +127,56 @@ audit:
 ./bin/mingyue-agent --help
 ```
 
+### CLI Commands
+
+The CLI now provides comprehensive commands to manage all agent features:
+
+```bash
+# File Management
+mingyue-agent files list /home/user
+mingyue-agent files info /path/to/file
+mingyue-agent files mkdir /path/to/newdir
+mingyue-agent files delete /path/to/file
+mingyue-agent files copy /source /destination
+mingyue-agent files move /source /destination
+
+# Disk Management
+mingyue-agent disk list
+mingyue-agent disk partitions
+mingyue-agent disk smart /dev/sda
+mingyue-agent disk mount /dev/sdb1 --mount-point /mnt/data
+mingyue-agent disk unmount /mnt/data
+
+# System Monitoring
+mingyue-agent monitor stats
+mingyue-agent monitor health
+
+# File Indexing
+mingyue-agent indexer scan /path/to/scan --recursive
+mingyue-agent indexer search "query" --limit 20
+mingyue-agent indexer stats
+
+# Task Scheduling
+mingyue-agent scheduler list
+mingyue-agent scheduler add "Daily Backup" --type backup --schedule daily
+mingyue-agent scheduler remove task-123
+mingyue-agent scheduler execute task-123
+
+# Authentication
+mingyue-agent auth token-create my-token --user admin
+mingyue-agent auth token-list
+mingyue-agent auth token-revoke token-id-123
+
+# Global Flags
+# Configure API connection (applies to all commands except 'start' and 'version')
+--api-url http://localhost:8080   # API server URL
+--api-key YOUR_API_KEY            # API authentication key
+--user YOUR_USERNAME              # User identifier for audit logs
+```
+
 ## 📖 Documentation
 
+- **[CLI Reference](docs/CLI.md)**: Complete command-line interface guide
 - **[API Documentation](docs/API.md)**: Complete API reference with examples
 - **[OpenAPI/Swagger](http://localhost:8080/swagger/)**: Interactive API documentation (when agent is running)
 - **[Architecture Guide](docs/ARCHITECTURE.md)**: Technical architecture and design
