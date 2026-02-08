@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
+	"time"
 
+	"github.com/KOPElan/mingyue-agent/internal/scheduler"
 	"github.com/spf13/cobra"
 )
 
@@ -29,24 +32,29 @@ func schedulerListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all scheduled tasks",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
+			var tasks []*scheduler.Task
+			if localMode {
+				_, dataDir, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				sched, err := localScheduler(dataDir)
+				if err != nil {
+					return err
+				}
+				tasks = sched.ListTasks()
+			} else {
+				client := getAPIClient()
+				resp, err := client.Get("/api/v1/scheduler/tasks")
+				if err != nil {
+					return err
+				}
 
-			resp, err := client.Get("/api/v1/scheduler/tasks")
-			if err != nil {
-				return err
-			}
-
-			var tasks []struct {
-				ID       string `json:"id"`
-				Name     string `json:"name"`
-				Type     string `json:"type"`
-				Schedule string `json:"schedule"`
-				Enabled  bool   `json:"enabled"`
-				LastRun  string `json:"last_run"`
-			}
-
-			if err := json.Unmarshal(resp.Data, &tasks); err != nil {
-				return fmt.Errorf("failed to parse response: %w", err)
+				var apiTasks []*scheduler.Task
+				if err := json.Unmarshal(resp.Data, &apiTasks); err != nil {
+					return fmt.Errorf("failed to parse response: %w", err)
+				}
+				tasks = apiTasks
 			}
 
 			if len(tasks) == 0 {
@@ -61,9 +69,9 @@ func schedulerListCmd() *cobra.Command {
 				if t.Enabled {
 					enabled = "Yes"
 				}
-				lastRun := t.LastRun
-				if lastRun == "" {
-					lastRun = "Never"
+				lastRun := "Never"
+				if t.LastRun != nil {
+					lastRun = t.LastRun.Format(time.RFC3339)
 				}
 				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
 					t.ID, t.Name, t.Type, t.Schedule, enabled, lastRun)
@@ -87,9 +95,31 @@ func schedulerAddCmd() *cobra.Command {
 		Short: "Add a new scheduled task",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			name := args[0]
+			if localMode {
+				_, dataDir, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				sched, err := localScheduler(dataDir)
+				if err != nil {
+					return err
+				}
+				task := &scheduler.Task{
+					Name:     name,
+					Type:     taskType,
+					Schedule: schedule,
+					Enabled:  enabled,
+					Params:   map[string]interface{}{},
+				}
+				if err := sched.AddTask(task); err != nil {
+					return err
+				}
+				fmt.Printf("Task added with ID: %s\n", task.ID)
+				return nil
+			}
 
+			client := getAPIClient()
 			body := map[string]interface{}{
 				"name":     name,
 				"type":     taskType,
@@ -129,14 +159,26 @@ func schedulerRemoveCmd() *cobra.Command {
 		Short: "Remove a scheduled task",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			taskID := args[0]
-
-			_, err := client.Post("/api/v1/scheduler/tasks/remove", map[string]string{
-				"id": taskID,
-			})
-			if err != nil {
-				return err
+			if localMode {
+				_, dataDir, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				sched, err := localScheduler(dataDir)
+				if err != nil {
+					return err
+				}
+				if err := sched.DeleteTask(taskID); err != nil {
+					return err
+				}
+			} else {
+				client := getAPIClient()
+				if _, err := client.Post("/api/v1/scheduler/tasks/remove", map[string]string{
+					"id": taskID,
+				}); err != nil {
+					return err
+				}
 			}
 
 			fmt.Printf("Task %s removed\n", taskID)
@@ -152,14 +194,26 @@ func schedulerExecuteCmd() *cobra.Command {
 		Short: "Execute a task immediately",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			taskID := args[0]
-
-			_, err := client.Post("/api/v1/scheduler/tasks/execute", map[string]string{
-				"id": taskID,
-			})
-			if err != nil {
-				return err
+			if localMode {
+				_, dataDir, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				sched, err := localScheduler(dataDir)
+				if err != nil {
+					return err
+				}
+				if _, err := sched.ExecuteTask(context.Background(), taskID); err != nil {
+					return err
+				}
+			} else {
+				client := getAPIClient()
+				if _, err := client.Post("/api/v1/scheduler/tasks/execute", map[string]string{
+					"id": taskID,
+				}); err != nil {
+					return err
+				}
 			}
 
 			fmt.Printf("Task %s executed\n", taskID)

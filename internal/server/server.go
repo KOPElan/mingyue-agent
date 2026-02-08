@@ -10,17 +10,8 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/KOPElan/mingyue-agent/docs"
-	"github.com/KOPElan/mingyue-agent/internal/api"
 	"github.com/KOPElan/mingyue-agent/internal/audit"
 	"github.com/KOPElan/mingyue-agent/internal/config"
-	"github.com/KOPElan/mingyue-agent/internal/diskmanager"
-	"github.com/KOPElan/mingyue-agent/internal/filemanager"
-	"github.com/KOPElan/mingyue-agent/internal/monitor"
-	"github.com/KOPElan/mingyue-agent/internal/netdisk"
-	"github.com/KOPElan/mingyue-agent/internal/netmanager"
-	"github.com/KOPElan/mingyue-agent/internal/sharemanager"
-	httpSwagger "github.com/swaggo/http-swagger"
 	"google.golang.org/grpc"
 )
 
@@ -40,61 +31,10 @@ func New(cfg *config.Config, auditLogger *audit.Logger) (*Server, error) {
 	}
 
 	if cfg.API.EnableHTTP {
-		mux := http.NewServeMux()
-		api.RegisterHTTPHandlers(mux, auditLogger, cfg)
-
-		// Swagger UI
-		mux.Handle("/swagger/", httpSwagger.WrapHandler)
-
-		mon := monitor.New()
-		monitorAPI := api.NewMonitorAPI(mon, auditLogger)
-		monitorAPI.Register(mux)
-
-		fileMgr := filemanager.New(cfg.Security.AllowedPaths, auditLogger)
-		fileAPI := api.NewFileAPI(fileMgr, auditLogger, cfg.Security.MaxUploadSize)
-		fileAPI.Register(mux)
-
-		diskMgr := diskmanager.New(cfg.Security.AllowedPaths)
-		diskAPI := api.NewDiskHandlers(diskMgr, auditLogger)
-		diskAPI.Register(mux)
-
-		// Network disk management
-		netDiskMgr, err := netdisk.New(&netdisk.Config{
-			AllowedHosts:       cfg.NetDisk.AllowedHosts,
-			AllowedMountPoints: cfg.NetDisk.AllowedMountPoints,
-			EncryptionKey:      cfg.NetDisk.EncryptionKey,
-			StateFile:          cfg.NetDisk.StateFile,
-		})
+		mux, err := NewHTTPMux(cfg, auditLogger)
 		if err != nil {
-			return nil, fmt.Errorf("create network disk manager: %w", err)
+			return nil, err
 		}
-		netDiskAPI := api.NewNetDiskHandlers(netDiskMgr, auditLogger)
-		netDiskAPI.Register(mux)
-
-		// Network management
-		netMgr, err := netmanager.New(&netmanager.Config{
-			ManagementInterface: cfg.Network.ManagementInterface,
-			HistoryFile:         cfg.Network.HistoryFile,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("create network manager: %w", err)
-		}
-		netMgrAPI := api.NewNetManagerHandlers(netMgr, auditLogger)
-		netMgrAPI.Register(mux)
-
-		// Share management
-		shareMgr, err := sharemanager.New(&sharemanager.Config{
-			AllowedPaths: cfg.ShareMgr.AllowedPaths,
-			SambaConfig:  cfg.ShareMgr.SambaConfig,
-			NFSConfig:    cfg.ShareMgr.NFSConfig,
-			BackupDir:    cfg.ShareMgr.BackupDir,
-			StateFile:    cfg.ShareMgr.StateFile,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("create share manager: %w", err)
-		}
-		shareAPI := api.NewShareHandlers(shareMgr, auditLogger)
-		shareAPI.Register(mux)
 
 		s.httpServer = &http.Server{
 			Addr:         fmt.Sprintf("%s:%d", cfg.Server.ListenAddr, cfg.Server.HTTPPort),
@@ -172,20 +112,11 @@ func (s *Server) Start(ctx context.Context) error {
 		go func() {
 			defer s.wg.Done()
 
-			mux := http.NewServeMux()
-			api.RegisterHTTPHandlers(mux, s.audit, s.config)
-
-			mon := monitor.New()
-			monitorAPI := api.NewMonitorAPI(mon, s.audit)
-			monitorAPI.Register(mux)
-
-			fileMgr := filemanager.New(s.config.Security.AllowedPaths, s.audit)
-			fileAPI := api.NewFileAPI(fileMgr, s.audit, s.config.Security.MaxUploadSize)
-			fileAPI.Register(mux)
-
-			diskMgr := diskmanager.New(s.config.Security.AllowedPaths)
-			diskAPI := api.NewDiskHandlers(diskMgr, s.audit)
-			diskAPI.Register(mux)
+			mux, err := NewHTTPMux(s.config, s.audit)
+			if err != nil {
+				fmt.Printf("UDS server error: %v\n", err)
+				return
+			}
 
 			srv := &http.Server{Handler: mux}
 			if err := srv.Serve(lis); err != nil && err != http.ErrServerClosed {

@@ -7,6 +7,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/KOPElan/mingyue-agent/internal/diskmanager"
 	"github.com/spf13/cobra"
 )
 
@@ -31,21 +32,30 @@ func diskListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all available disks",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
+			var disks []diskmanager.DiskInfo
+			if localMode {
+				cfg, _, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				mgr := localDiskManager(cfg)
+				result, err := mgr.ListDisks()
+				if err != nil {
+					return err
+				}
+				disks = result
+			} else {
+				client := getAPIClient()
+				resp, err := client.Get("/api/v1/disk/list")
+				if err != nil {
+					return err
+				}
 
-			resp, err := client.Get("/api/v1/disk/list")
-			if err != nil {
-				return err
-			}
-
-			var disks []struct {
-				Device string `json:"device"`
-				Model  string `json:"model"`
-				Size   int64  `json:"size"`
-			}
-
-			if err := json.Unmarshal(resp.Data, &disks); err != nil {
-				return fmt.Errorf("failed to parse response: %w", err)
+				var apiDisks []diskmanager.DiskInfo
+				if err := json.Unmarshal(resp.Data, &apiDisks); err != nil {
+					return fmt.Errorf("failed to parse response: %w", err)
+				}
+				disks = apiDisks
 			}
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
@@ -66,26 +76,30 @@ func diskPartitionsCmd() *cobra.Command {
 		Use:   "partitions",
 		Short: "List all disk partitions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
+			var partitions []diskmanager.Partition
+			if localMode {
+				cfg, _, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				mgr := localDiskManager(cfg)
+				result, err := mgr.ListPartitions()
+				if err != nil {
+					return err
+				}
+				partitions = result
+			} else {
+				client := getAPIClient()
+				resp, err := client.Get("/api/v1/disk/partitions")
+				if err != nil {
+					return err
+				}
 
-			resp, err := client.Get("/api/v1/disk/partitions")
-			if err != nil {
-				return err
-			}
-
-			var partitions []struct {
-				Device     string `json:"device"`
-				MountPoint string `json:"mount_point"`
-				Filesystem string `json:"filesystem"`
-				Size       int64  `json:"size"`
-				Used       int64  `json:"used"`
-				Available  int64  `json:"available"`
-				UUID       string `json:"uuid"`
-				Label      string `json:"label"`
-			}
-
-			if err := json.Unmarshal(resp.Data, &partitions); err != nil {
-				return fmt.Errorf("failed to parse response: %w", err)
+				var apiPartitions []diskmanager.Partition
+				if err := json.Unmarshal(resp.Data, &apiPartitions); err != nil {
+					return fmt.Errorf("failed to parse response: %w", err)
+				}
+				partitions = apiPartitions
 			}
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
@@ -99,7 +113,7 @@ func diskPartitionsCmd() *cobra.Command {
 					mount = "-"
 				}
 				fmt.Fprintf(w, "%s\t%s\t%s\t%.2f\t%.2f\t%.2f\t%s\n",
-					p.Device, mount, p.Filesystem, sizeGB, usedGB, availGB, p.Label)
+					p.Device, mount, p.FileSystem, sizeGB, usedGB, availGB, p.Label)
 			}
 			w.Flush()
 
@@ -114,9 +128,31 @@ func diskSmartCmd() *cobra.Command {
 		Short: "Get SMART information for a disk",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			device := args[0]
+			if localMode {
+				cfg, _, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				mgr := localDiskManager(cfg)
+				smart, err := mgr.GetSMARTInfo(device)
+				if err != nil {
+					return err
+				}
 
+				fmt.Printf("Device:      %s\n", device)
+				fmt.Printf("Health:      %s\n", func() string {
+					if smart.Healthy {
+						return "PASSED"
+					}
+					return "FAILED"
+				}())
+				fmt.Printf("Temperature: %d°C\n", smart.Temperature)
+				fmt.Printf("Power On:    %d hours\n", smart.PowerOnHours)
+				return nil
+			}
+
+			client := getAPIClient()
 			resp, err := client.Get(fmt.Sprintf("/api/v1/disk/smart?device=%s", url.QueryEscape(device)))
 			if err != nil {
 				return err
@@ -163,16 +199,29 @@ func diskMountCmd() *cobra.Command {
 		Short: "Mount a disk partition",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			device := args[0]
-
-			_, err := client.Post("/api/v1/disk/mount", map[string]string{
-				"device":      device,
-				"mount_point": mountPoint,
-				"filesystem":  filesystem,
-			})
-			if err != nil {
-				return err
+			if localMode {
+				cfg, _, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				mgr := localDiskManager(cfg)
+				if err := mgr.Mount(diskmanager.MountOptions{
+					Device:     device,
+					MountPoint: mountPoint,
+					FileSystem: filesystem,
+				}); err != nil {
+					return err
+				}
+			} else {
+				client := getAPIClient()
+				if _, err := client.Post("/api/v1/disk/mount", map[string]string{
+					"device":      device,
+					"mount_point": mountPoint,
+					"filesystem":  filesystem,
+				}); err != nil {
+					return err
+				}
 			}
 
 			fmt.Printf("Mounted %s at %s\n", device, mountPoint)
@@ -195,15 +244,24 @@ func diskUnmountCmd() *cobra.Command {
 		Short: "Unmount a disk partition",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			target := args[0]
-
-			_, err := client.Post("/api/v1/disk/unmount", map[string]interface{}{
-				"target": target,
-				"force":  force,
-			})
-			if err != nil {
-				return err
+			if localMode {
+				cfg, _, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				mgr := localDiskManager(cfg)
+				if err := mgr.Unmount(target, force); err != nil {
+					return err
+				}
+			} else {
+				client := getAPIClient()
+				if _, err := client.Post("/api/v1/disk/unmount", map[string]interface{}{
+					"target": target,
+					"force":  force,
+				}); err != nil {
+					return err
+				}
 			}
 
 			fmt.Printf("Unmounted %s\n", target)

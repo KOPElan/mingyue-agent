@@ -152,6 +152,32 @@ type ScanResult struct {
 	Errors       int       `json:"errors"`
 }
 
+// Stats summarizes indexer metadata for diagnostics.
+type Stats struct {
+	TotalFiles int
+	TotalSize  int64
+	LastScan   time.Time
+}
+
+// Stats returns aggregate statistics from the indexer database.
+func (i *Indexer) Stats(ctx context.Context) (*Stats, error) {
+	result := &Stats{}
+
+	if err := i.db.QueryRowContext(ctx, "SELECT COUNT(*), COALESCE(SUM(size), 0) FROM file_metadata").Scan(&result.TotalFiles, &result.TotalSize); err != nil {
+		return nil, fmt.Errorf("query file stats: %w", err)
+	}
+
+	var lastScanUnix sql.NullInt64
+	if err := i.db.QueryRowContext(ctx, "SELECT completed_at FROM scan_history ORDER BY completed_at DESC LIMIT 1").Scan(&lastScanUnix); err != nil {
+		return nil, fmt.Errorf("query scan history: %w", err)
+	}
+	if lastScanUnix.Valid {
+		result.LastScan = time.Unix(lastScanUnix.Int64, 0)
+	}
+
+	return result, nil
+}
+
 func (i *Indexer) scanPath(ctx context.Context, tx *sql.Tx, path string, opts ScanOptions, result *ScanResult) error {
 	return filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {

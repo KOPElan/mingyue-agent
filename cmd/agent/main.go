@@ -56,6 +56,11 @@ var (
 	apiURL  string
 	apiKey  string
 	apiUser string
+
+	// Local execution flags
+	localMode       bool
+	localConfigPath string
+	localDataDir    string
 )
 
 func main() {
@@ -72,9 +77,13 @@ local privileged operations capabilities.`,
 	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "http://localhost:8080", "API server URL")
 	rootCmd.PersistentFlags().StringVar(&apiKey, "api-key", "", "API authentication key")
 	rootCmd.PersistentFlags().StringVar(&apiUser, "user", "", "User identifier for requests")
+	rootCmd.PersistentFlags().BoolVar(&localMode, "local", false, "Execute commands using local business logic instead of HTTP API")
+	rootCmd.PersistentFlags().StringVar(&localConfigPath, "local-config", defaultConfigPath, "Config file path for local execution")
+	rootCmd.PersistentFlags().StringVar(&localDataDir, "local-data-dir", "", "Local data directory for state and database files")
 
 	// Add daemon commands
 	rootCmd.AddCommand(startCmd())
+	rootCmd.AddCommand(apiCmd())
 	rootCmd.AddCommand(versionCmd())
 
 	// Add management commands

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
 	"text/tabwriter"
 
+	"github.com/KOPElan/mingyue-agent/internal/indexer"
 	"github.com/spf13/cobra"
 )
 
@@ -35,8 +37,31 @@ func indexerScanCmd() *cobra.Command {
 		Short: "Scan paths for file indexing",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
+			if localMode {
+				_, dataDir, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				idx, err := localIndexer(dataDir)
+				if err != nil {
+					return err
+				}
+				result, err := idx.Scan(context.Background(), indexer.ScanOptions{
+					Paths:       args,
+					Recursive:   recursive,
+					Incremental: incremental,
+				})
+				if err != nil {
+					return err
+				}
 
+				fmt.Printf("Scan completed:\n")
+				fmt.Printf("  Files added:   %d\n", result.FilesAdded)
+				fmt.Printf("  Files updated: %d\n", result.FilesUpdated)
+				return nil
+			}
+
+			client := getAPIClient()
 			body := map[string]interface{}{
 				"paths":       args,
 				"recursive":   recursive,
@@ -79,9 +104,38 @@ func indexerSearchCmd() *cobra.Command {
 		Short: "Search indexed files",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			query := args[0]
+			if localMode {
+				_, dataDir, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				idx, err := localIndexer(dataDir)
+				if err != nil {
+					return err
+				}
+				results, err := idx.Search(context.Background(), query, limit, 0)
+				if err != nil {
+					return err
+				}
 
+				if len(results) == 0 {
+					fmt.Println("No results found")
+					return nil
+				}
+
+				w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+				fmt.Fprintln(w, "TYPE\tSIZE\tPATH")
+				for _, r := range results {
+					sizeStr := formatBytes(r.Size)
+					fmt.Fprintf(w, "%s\t%s\t%s\n", r.MimeType, sizeStr, r.Path)
+				}
+				w.Flush()
+				fmt.Printf("\nFound %d results\n", len(results))
+				return nil
+			}
+
+			client := getAPIClient()
 			resp, err := client.Get(fmt.Sprintf("/api/v1/indexer/search?q=%s&limit=%d", url.QueryEscape(query), limit))
 			if err != nil {
 				return err
@@ -126,8 +180,30 @@ func indexerStatsCmd() *cobra.Command {
 		Use:   "stats",
 		Short: "Get indexer statistics",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
+			if localMode {
+				_, dataDir, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				idx, err := localIndexer(dataDir)
+				if err != nil {
+					return err
+				}
+				stats, err := idx.Stats(context.Background())
+				if err != nil {
+					return err
+				}
+				fmt.Printf("Total Files: %d\n", stats.TotalFiles)
+				fmt.Printf("Total Size:  %s\n", formatBytes(stats.TotalSize))
+				if stats.LastScan.IsZero() {
+					fmt.Printf("Last Scan:   -\n")
+					return nil
+				}
+				fmt.Printf("Last Scan:   %s\n", stats.LastScan.Format("2006-01-02 15:04:05"))
+				return nil
+			}
 
+			client := getAPIClient()
 			resp, err := client.Get("/api/v1/indexer/stats")
 			if err != nil {
 				return err

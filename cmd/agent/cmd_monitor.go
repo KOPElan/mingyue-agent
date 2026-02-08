@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
+	"github.com/KOPElan/mingyue-agent/internal/monitor"
 	"github.com/spf13/cobra"
 )
 
@@ -25,74 +27,52 @@ func monitorStatsCmd() *cobra.Command {
 		Use:   "stats",
 		Short: "Get system resource statistics",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
+			var stats *monitor.SystemStats
+			if localMode {
+				mon := localMonitor()
+				result, err := mon.GetStats()
+				if err != nil {
+					return err
+				}
+				stats = result
+			} else {
+				client := getAPIClient()
+				resp, err := client.Get("/api/v1/monitor/stats")
+				if err != nil {
+					return err
+				}
 
-			resp, err := client.Get("/api/v1/monitor/stats")
-			if err != nil {
-				return err
-			}
-
-			var stats struct {
-				CPU struct {
-					Cores     int     `json:"cores"`
-					UsagePC   float64 `json:"usage_percent"`
-					LoadAvg1  float64 `json:"load_avg_1"`
-					LoadAvg5  float64 `json:"load_avg_5"`
-					LoadAvg15 float64 `json:"load_avg_15"`
-				} `json:"cpu"`
-				Memory struct {
-					Total     int64   `json:"total"`
-					Available int64   `json:"available"`
-					Used      int64   `json:"used"`
-					UsedPC    float64 `json:"used_percent"`
-					SwapTotal int64   `json:"swap_total"`
-					SwapUsed  int64   `json:"swap_used"`
-				} `json:"memory"`
-				Disk struct {
-					Total  int64   `json:"total"`
-					Free   int64   `json:"free"`
-					Used   int64   `json:"used"`
-					UsedPC float64 `json:"used_percent"`
-				} `json:"disk"`
-				Process struct {
-					PID        int   `json:"pid"`
-					Goroutines int   `json:"goroutines"`
-					MemAlloc   int64 `json:"mem_alloc"`
-					MemSys     int64 `json:"mem_sys"`
-					NumGC      int   `json:"num_gc"`
-					OpenFiles  int   `json:"open_files"`
-				} `json:"process"`
-				Uptime float64 `json:"uptime"`
-			}
-
-			if err := json.Unmarshal(resp.Data, &stats); err != nil {
-				return fmt.Errorf("failed to parse response: %w", err)
+				var apiStats monitor.SystemStats
+				if err := json.Unmarshal(resp.Data, &apiStats); err != nil {
+					return fmt.Errorf("failed to parse response: %w", err)
+				}
+				stats = &apiStats
 			}
 
 			fmt.Println("=== CPU ===")
 			fmt.Printf("Cores:         %d\n", stats.CPU.Cores)
-			fmt.Printf("Usage:         %.2f%%\n", stats.CPU.UsagePC)
+			fmt.Printf("Usage:         %.2f%%\n", stats.CPU.UsagePercent)
 			fmt.Printf("Load Avg (1m): %.2f\n", stats.CPU.LoadAvg1)
 			fmt.Printf("Load Avg (5m): %.2f\n", stats.CPU.LoadAvg5)
 			fmt.Printf("Load Avg (15m): %.2f\n", stats.CPU.LoadAvg15)
 
 			fmt.Println("\n=== Memory ===")
-			fmt.Printf("Total:     %s\n", formatBytes(stats.Memory.Total))
-			fmt.Printf("Used:      %s (%.2f%%)\n", formatBytes(stats.Memory.Used), stats.Memory.UsedPC)
-			fmt.Printf("Available: %s\n", formatBytes(stats.Memory.Available))
-			fmt.Printf("Swap Total: %s\n", formatBytes(stats.Memory.SwapTotal))
-			fmt.Printf("Swap Used:  %s\n", formatBytes(stats.Memory.SwapUsed))
+			fmt.Printf("Total:     %s\n", formatBytes(int64(stats.Memory.Total)))
+			fmt.Printf("Used:      %s (%.2f%%)\n", formatBytes(int64(stats.Memory.Used)), stats.Memory.UsedPercent)
+			fmt.Printf("Available: %s\n", formatBytes(int64(stats.Memory.Available)))
+			fmt.Printf("Swap Total: %s\n", formatBytes(int64(stats.Memory.SwapTotal)))
+			fmt.Printf("Swap Used:  %s\n", formatBytes(int64(stats.Memory.SwapUsed)))
 
 			fmt.Println("\n=== Disk ===")
-			fmt.Printf("Total: %s\n", formatBytes(stats.Disk.Total))
-			fmt.Printf("Used:  %s (%.2f%%)\n", formatBytes(stats.Disk.Used), stats.Disk.UsedPC)
-			fmt.Printf("Free:  %s\n", formatBytes(stats.Disk.Free))
+			fmt.Printf("Total: %s\n", formatBytes(int64(stats.Disk.Total)))
+			fmt.Printf("Used:  %s (%.2f%%)\n", formatBytes(int64(stats.Disk.Used)), stats.Disk.UsedPercent)
+			fmt.Printf("Free:  %s\n", formatBytes(int64(stats.Disk.Free)))
 
 			fmt.Println("\n=== Process ===")
 			fmt.Printf("PID:        %d\n", stats.Process.PID)
 			fmt.Printf("Goroutines: %d\n", stats.Process.Goroutines)
-			fmt.Printf("Memory:     %s\n", formatBytes(stats.Process.MemAlloc))
-			fmt.Printf("Sys Memory: %s\n", formatBytes(stats.Process.MemSys))
+			fmt.Printf("Memory:     %s\n", formatBytes(int64(stats.Process.MemAlloc)))
+			fmt.Printf("Sys Memory: %s\n", formatBytes(int64(stats.Process.MemSys)))
 			fmt.Printf("GC Runs:    %d\n", stats.Process.NumGC)
 			fmt.Printf("Open Files: %d\n", stats.Process.OpenFiles)
 
@@ -108,8 +88,20 @@ func monitorHealthCmd() *cobra.Command {
 		Use:   "health",
 		Short: "Get system health status",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
+			if localMode {
+				mon := localMonitor()
+				healthy := mon.IsHealthy()
+				status := "healthy"
+				if !healthy {
+					status = "unhealthy"
+				}
+				fmt.Printf("Status:    %s\n", status)
+				fmt.Printf("Healthy:   %v\n", healthy)
+				fmt.Printf("Timestamp: %s\n", time.Now().Format(time.RFC3339))
+				return nil
+			}
 
+			client := getAPIClient()
 			resp, err := client.Get("/api/v1/monitor/health")
 			if err != nil {
 				return err

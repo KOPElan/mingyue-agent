@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
 	"text/tabwriter"
-	"time"
 
+	"github.com/KOPElan/mingyue-agent/internal/filemanager"
 	"github.com/spf13/cobra"
 )
 
@@ -34,26 +35,32 @@ func filesListCmd() *cobra.Command {
 		Short: "List files in a directory",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			path := args[0]
+			var files []filemanager.FileInfo
 
-			resp, err := client.Get(fmt.Sprintf("/api/v1/files/list?path=%s", url.QueryEscape(path)))
-			if err != nil {
-				return err
-			}
+			if localMode {
+				cfg, _, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				mgr := localFileManager(cfg)
+				result, err := mgr.List(context.Background(), filemanager.ListOptions{Path: path}, localUser())
+				if err != nil {
+					return err
+				}
+				files = result
+			} else {
+				client := getAPIClient()
+				resp, err := client.Get(fmt.Sprintf("/api/v1/files/list?path=%s", url.QueryEscape(path)))
+				if err != nil {
+					return err
+				}
 
-			var files []struct {
-				Name        string    `json:"name"`
-				Path        string    `json:"path"`
-				Size        int64     `json:"size"`
-				ModTime     time.Time `json:"mod_time"`
-				IsDir       bool      `json:"is_dir"`
-				IsSymlink   bool      `json:"is_symlink"`
-				Permissions string    `json:"permissions"`
-			}
-
-			if err := json.Unmarshal(resp.Data, &files); err != nil {
-				return fmt.Errorf("failed to parse response: %w", err)
+				var apiFiles []filemanager.FileInfo
+				if err := json.Unmarshal(resp.Data, &apiFiles); err != nil {
+					return fmt.Errorf("failed to parse response: %w", err)
+				}
+				files = apiFiles
 			}
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
@@ -81,29 +88,32 @@ func filesInfoCmd() *cobra.Command {
 		Short: "Get file or directory information",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			path := args[0]
+			var info *filemanager.FileInfo
 
-			resp, err := client.Get(fmt.Sprintf("/api/v1/files/info?path=%s", url.QueryEscape(path)))
-			if err != nil {
-				return err
-			}
+			if localMode {
+				cfg, _, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				mgr := localFileManager(cfg)
+				result, err := mgr.GetInfo(context.Background(), path, localUser())
+				if err != nil {
+					return err
+				}
+				info = result
+			} else {
+				client := getAPIClient()
+				resp, err := client.Get(fmt.Sprintf("/api/v1/files/info?path=%s", url.QueryEscape(path)))
+				if err != nil {
+					return err
+				}
 
-			var info struct {
-				Name        string    `json:"name"`
-				Path        string    `json:"path"`
-				Size        int64     `json:"size"`
-				Mode        uint32    `json:"mode"`
-				ModTime     time.Time `json:"mod_time"`
-				IsDir       bool      `json:"is_dir"`
-				IsSymlink   bool      `json:"is_symlink"`
-				Owner       uint32    `json:"owner"`
-				Group       uint32    `json:"group"`
-				Permissions string    `json:"permissions"`
-			}
-
-			if err := json.Unmarshal(resp.Data, &info); err != nil {
-				return fmt.Errorf("failed to parse response: %w", err)
+				var apiInfo filemanager.FileInfo
+				if err := json.Unmarshal(resp.Data, &apiInfo); err != nil {
+					return fmt.Errorf("failed to parse response: %w", err)
+				}
+				info = &apiInfo
 			}
 
 			fmt.Printf("Name:        %s\n", info.Name)
@@ -133,12 +143,21 @@ func filesMkdirCmd() *cobra.Command {
 		Short: "Create a new directory",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			path := args[0]
-
-			_, err := client.Post("/api/v1/files/mkdir", map[string]string{"path": path})
-			if err != nil {
-				return err
+			if localMode {
+				cfg, _, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				mgr := localFileManager(cfg)
+				if err := mgr.CreateDir(context.Background(), path, localUser()); err != nil {
+					return err
+				}
+			} else {
+				client := getAPIClient()
+				if _, err := client.Post("/api/v1/files/mkdir", map[string]string{"path": path}); err != nil {
+					return err
+				}
 			}
 
 			fmt.Printf("Directory created: %s\n", path)
@@ -153,12 +172,21 @@ func filesDeleteCmd() *cobra.Command {
 		Short: "Delete a file or directory",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			path := args[0]
-
-			_, err := client.Post("/api/v1/files/delete", map[string]string{"path": path})
-			if err != nil {
-				return err
+			if localMode {
+				cfg, _, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				mgr := localFileManager(cfg)
+				if err := mgr.Delete(context.Background(), path, localUser()); err != nil {
+					return err
+				}
+			} else {
+				client := getAPIClient()
+				if _, err := client.Post("/api/v1/files/delete", map[string]string{"path": path}); err != nil {
+					return err
+				}
 			}
 
 			fmt.Printf("Deleted: %s\n", path)
@@ -173,16 +201,25 @@ func filesCopyCmd() *cobra.Command {
 		Short: "Copy a file",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			src := args[0]
 			dst := args[1]
-
-			_, err := client.Post("/api/v1/files/copy", map[string]string{
-				"src_path": src,
-				"dst_path": dst,
-			})
-			if err != nil {
-				return err
+			if localMode {
+				cfg, _, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				mgr := localFileManager(cfg)
+				if err := mgr.Copy(context.Background(), src, dst, localUser()); err != nil {
+					return err
+				}
+			} else {
+				client := getAPIClient()
+				if _, err := client.Post("/api/v1/files/copy", map[string]string{
+					"src_path": src,
+					"dst_path": dst,
+				}); err != nil {
+					return err
+				}
 			}
 
 			fmt.Printf("Copied %s -> %s\n", src, dst)
@@ -197,16 +234,25 @@ func filesMoveCmd() *cobra.Command {
 		Short: "Move a file or directory",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := getAPIClient()
 			src := args[0]
 			dst := args[1]
-
-			_, err := client.Post("/api/v1/files/move", map[string]string{
-				"src_path": src,
-				"dst_path": dst,
-			})
-			if err != nil {
-				return err
+			if localMode {
+				cfg, _, err := loadLocalConfig()
+				if err != nil {
+					return err
+				}
+				mgr := localFileManager(cfg)
+				if err := mgr.Move(context.Background(), src, dst, localUser()); err != nil {
+					return err
+				}
+			} else {
+				client := getAPIClient()
+				if _, err := client.Post("/api/v1/files/move", map[string]string{
+					"src_path": src,
+					"dst_path": dst,
+				}); err != nil {
+					return err
+				}
 			}
 
 			fmt.Printf("Moved %s -> %s\n", src, dst)
