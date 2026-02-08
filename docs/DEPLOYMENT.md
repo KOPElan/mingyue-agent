@@ -15,6 +15,71 @@ This guide provides comprehensive instructions for deploying Mingyue Agent on Li
 - `blkid` - For partition information (usually pre-installed)
 - `lsblk` - For disk listing (usually pre-installed)
 
+## Directory Structure and Permissions
+
+Mingyue Agent requires the following directories with specific permissions:
+
+### Required Directories
+
+```
+/etc/mingyue-agent/              # Configuration files (owner: root:root, mode: 755)
+├── config.yaml                  # Main configuration (mode: 644)
+└── network/                     # Network configuration storage (owner: root:root, mode: 755)
+
+/var/log/mingyue-agent/          # Log files (owner: mingyue-agent:mingyue-agent, mode: 755)
+├── agent.log                    # Main application log
+└── audit.log                    # Audit log
+
+/var/run/mingyue-agent/          # Runtime files (owner: mingyue-agent:mingyue-agent, mode: 755)
+└── agent.sock                   # Unix domain socket
+
+/var/lib/mingyue-agent/          # Application data (owner: mingyue-agent:mingyue-agent, mode: 755)
+├── auth.db                      # Authentication database
+├── scheduler.db                 # Scheduler database
+├── netdisk-state.json          # Network disk state
+├── network-history.json        # Network configuration history
+├── share-state.json            # Share management state
+└── share-backups/              # Share configuration backups (mode: 755)
+```
+
+### Create All Required Directories
+
+Use the following command to create all required directories with correct permissions:
+
+```bash
+# Create directories
+sudo mkdir -p /etc/mingyue-agent/network
+sudo mkdir -p /var/log/mingyue-agent
+sudo mkdir -p /var/run/mingyue-agent
+sudo mkdir -p /var/lib/mingyue-agent/share-backups
+
+# Set ownership
+sudo chown -R mingyue-agent:mingyue-agent /var/log/mingyue-agent
+sudo chown -R mingyue-agent:mingyue-agent /var/run/mingyue-agent
+sudo chown -R mingyue-agent:mingyue-agent /var/lib/mingyue-agent
+
+# Set permissions
+sudo chmod -R 755 /var/log/mingyue-agent
+sudo chmod -R 755 /var/run/mingyue-agent
+sudo chmod -R 755 /var/lib/mingyue-agent
+```
+
+### Verify Setup
+
+After creating directories, run the verification script:
+
+```bash
+sudo ./scripts/verify-setup.sh
+```
+
+This script will check:
+- All required directories exist
+- Permissions are correct
+- User and group are properly configured
+- Binary is installed and executable
+- Configuration files are present
+- Systemd service is installed
+
 ## Installation Methods
 
 ### Method 1: Automated Installation (Recommended)
@@ -333,6 +398,67 @@ curl http://localhost:8080/api/v1/monitor/stats
    ```bash
    sudo chown -R mingyue-agent:mingyue-agent /var/log/mingyue-agent /var/run/mingyue-agent
    ```
+
+### Read-only File System Error
+
+If you see an error like:
+```
+failed to create daemon: create server: create share manager: create backup directory: 
+mkdir /var/lib/mingyue-agent: read-only file system
+```
+
+This indicates that required directories don't exist or are not writable. Fix with:
+
+```bash
+# Create all required directories
+sudo mkdir -p /var/lib/mingyue-agent/share-backups
+sudo mkdir -p /etc/mingyue-agent/network
+sudo mkdir -p /var/log/mingyue-agent
+sudo mkdir -p /var/run/mingyue-agent
+
+# Set correct ownership
+sudo chown -R mingyue-agent:mingyue-agent /var/lib/mingyue-agent
+sudo chown -R mingyue-agent:mingyue-agent /var/log/mingyue-agent
+sudo chown -R mingyue-agent:mingyue-agent /var/run/mingyue-agent
+
+# Set correct permissions
+sudo chmod -R 755 /var/lib/mingyue-agent
+sudo chmod -R 755 /var/log/mingyue-agent
+sudo chmod -R 755 /var/run/mingyue-agent
+
+# Verify setup
+sudo ./scripts/verify-setup.sh
+```
+
+**Important**: Do not run the application with fallback to `/tmp` or home directories for business data. 
+All application data must be stored in persistent directories (`/var/lib/mingyue-agent`) to prevent data loss 
+after system reboots.
+
+### Directory Permission Issues
+
+If the service fails with permission errors:
+
+1. **Verify directory ownership**:
+   ```bash
+   ls -la /var/lib/mingyue-agent
+   ls -la /var/log/mingyue-agent
+   ls -la /var/run/mingyue-agent
+   ```
+   
+   All should be owned by `mingyue-agent:mingyue-agent`
+
+2. **Check SELinux context** (if SELinux is enabled):
+   ```bash
+   sudo semanage fcontext -a -t var_lib_t "/var/lib/mingyue-agent(/.*)?"
+   sudo restorecon -R /var/lib/mingyue-agent
+   ```
+
+3. **Verify systemd ReadWritePaths**:
+   ```bash
+   sudo systemctl cat mingyue-agent.service | grep ReadWritePaths
+   ```
+   
+   Should include: `/var/log/mingyue-agent /var/run/mingyue-agent /var/lib/mingyue-agent`
 
 ### API Not Responding
 

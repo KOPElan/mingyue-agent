@@ -69,18 +69,37 @@ create_user() {
 create_directories() {
     log_info "Creating directories..."
 
+    # Create main directories
     mkdir -p "$CONFIG_DIR"
     mkdir -p "$LOG_DIR"
     mkdir -p "$RUN_DIR"
     mkdir -p "$DATA_DIR"
 
+    # Create application-specific data directories
+    log_info "Creating application data directories..."
+    mkdir -p "$DATA_DIR/share-backups"
+    mkdir -p "$CONFIG_DIR/network"
+
+    # Set ownership
     chown -R "$USER:$GROUP" "$LOG_DIR"
     chown -R "$USER:$GROUP" "$RUN_DIR"
     chown -R "$USER:$GROUP" "$DATA_DIR"
+    
+    # Set permissions
     chmod 755 "$CONFIG_DIR"
     chmod 755 "$LOG_DIR"
     chmod 755 "$RUN_DIR"
     chmod 755 "$DATA_DIR"
+    chmod 755 "$DATA_DIR/share-backups"
+    chmod 755 "$CONFIG_DIR/network"
+    
+    log_info "Directory structure created:"
+    log_info "  Config: $CONFIG_DIR"
+    log_info "  Logs:   $LOG_DIR"
+    log_info "  Run:    $RUN_DIR"
+    log_info "  Data:   $DATA_DIR"
+    log_info "  - Share backups: $DATA_DIR/share-backups"
+    log_info "  - Network config: $CONFIG_DIR/network"
 }
 
 install_binary() {
@@ -180,6 +199,71 @@ enable_service() {
     log_info "Service enabled"
 }
 
+verify_installation() {
+    log_info "Verifying installation..."
+    
+    local all_ok=true
+    
+    # Check binary
+    if [[ -x "$INSTALL_DIR/mingyue-agent" ]]; then
+        log_info "✓ Binary installed and executable"
+    else
+        log_error "✗ Binary not found or not executable: $INSTALL_DIR/mingyue-agent"
+        all_ok=false
+    fi
+    
+    # Check configuration
+    if [[ -f "$CONFIG_DIR/config.yaml" ]]; then
+        log_info "✓ Configuration file exists"
+    else
+        log_warn "⚠ Configuration file not found: $CONFIG_DIR/config.yaml"
+    fi
+    
+    # Check required directories and permissions
+    local dirs=(
+        "$CONFIG_DIR:Configuration directory"
+        "$LOG_DIR:Log directory"
+        "$RUN_DIR:Runtime directory"
+        "$DATA_DIR:Data directory"
+        "$DATA_DIR/share-backups:Share backups directory"
+        "$CONFIG_DIR/network:Network config directory"
+    )
+    
+    for dir_info in "${dirs[@]}"; do
+        IFS=':' read -r dir desc <<< "$dir_info"
+        if [[ -d "$dir" ]]; then
+            # Check if writable
+            if [[ -w "$dir" ]] || sudo -u "$USER" test -w "$dir" 2>/dev/null; then
+                log_info "✓ $desc exists and is writable"
+            else
+                log_error "✗ $desc exists but is not writable by user $USER: $dir"
+                all_ok=false
+            fi
+        else
+            log_error "✗ $desc does not exist: $dir"
+            all_ok=false
+        fi
+    done
+    
+    # Check systemd service
+    if command -v systemctl &> /dev/null; then
+        if systemctl list-unit-files | grep -q mingyue-agent.service; then
+            log_info "✓ Systemd service installed"
+        else
+            log_error "✗ Systemd service not installed"
+            all_ok=false
+        fi
+    fi
+    
+    if [[ "$all_ok" == true ]]; then
+        log_info "All verification checks passed!"
+        return 0
+    else
+        log_error "Some verification checks failed. Please review the errors above."
+        return 1
+    fi
+}
+
 print_next_steps() {
     log_info "Installation completed successfully!"
     echo ""
@@ -211,6 +295,11 @@ main() {
     install_config
     install_systemd_service
     enable_service
+    
+    echo ""
+    verify_installation
+    echo ""
+    
     print_next_steps
 }
 

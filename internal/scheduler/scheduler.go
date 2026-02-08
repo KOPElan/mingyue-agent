@@ -70,13 +70,10 @@ func New(config Config) (*Scheduler, error) {
 		config.SyncInterval = 5 * time.Minute
 	}
 
-	// Try to create DB directory, fallback to temp dir on read-only filesystem
+	// Ensure DB directory exists
 	dbDir := filepath.Dir(config.DBPath)
 	if err := os.MkdirAll(dbDir, 0755); err != nil {
-		config.DBPath = filepath.Join(os.TempDir(), "mingyue-agent", filepath.Base(config.DBPath))
-		if err := os.MkdirAll(filepath.Dir(config.DBPath), 0755); err != nil {
-			return nil, fmt.Errorf("create database directory: %w", err)
-		}
+		return nil, fmt.Errorf("create database directory %s: %w\n\nPlease ensure the directory exists and has correct permissions:\n  sudo mkdir -p %s\n  sudo chown -R $(whoami):$(whoami) %s", dbDir, err, dbDir, dbDir)
 	}
 
 	db, err := sql.Open("sqlite3", config.DBPath)

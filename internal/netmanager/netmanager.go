@@ -563,7 +563,7 @@ func (m *Manager) parsePortLine(line string) *PortInfo {
 func (m *Manager) saveHistory() error {
 	dir := filepath.Dir(m.historyFile)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("create history directory: %w", err)
+		return fmt.Errorf("create history directory %s: %w\n\nPlease ensure the directory exists and has correct permissions:\n  sudo mkdir -p %s\n  sudo chown -R $(whoami):$(whoami) %s", dir, err, dir, dir)
 	}
 
 	data, err := json.MarshalIndent(m.history, "", "  ")

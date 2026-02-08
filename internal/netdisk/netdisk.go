@@ -475,7 +475,7 @@ func (m *Manager) saveState() error {
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(m.stateFile)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("create state directory: %w", err)
+		return fmt.Errorf("create state directory %s: %w\n\nPlease ensure the directory exists and has correct permissions:\n  sudo mkdir -p %s\n  sudo chown -R $(whoami):$(whoami) %s", dir, err, dir, dir)
 	}
 
 	data, err := json.MarshalIndent(m.shares, "", "  ")
