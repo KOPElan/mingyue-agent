@@ -223,7 +223,6 @@ verify_installation() {
         "$RUN_DIR:Runtime directory"
         "$DATA_DIR:Data directory"
         "$DATA_DIR/share-backups:Share backups directory"
-        "$CONFIG_DIR/network:Network config directory"
     )
     
     for dir_info in "${dirs[@]}"; do

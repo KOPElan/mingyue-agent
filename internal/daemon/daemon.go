@@ -21,49 +21,75 @@ type Daemon struct {
 	logDir string
 }
 
-// verifyDirectories checks if all required directories exist and are writable
+// verifyDirectories checks if all required directories exist and have correct permissions
 func verifyDirectories(cfg *config.Config) error {
 	requiredDirs := []struct {
 		path        string
 		description string
+		owner       string // "root" or "mingyue-agent"
 	}{
-		{filepath.Dir(cfg.NetDisk.StateFile), "network disk state"},
-		{filepath.Dir(cfg.Network.HistoryFile), "network history"},
-		{cfg.ShareMgr.BackupDir, "share backups"},
-		{filepath.Dir(cfg.ShareMgr.StateFile), "share state"},
+		{filepath.Dir(cfg.NetDisk.StateFile), "network disk state", "mingyue-agent"},
+		{filepath.Dir(cfg.Network.HistoryFile), "network history", "mingyue-agent"},
+		{cfg.ShareMgr.BackupDir, "share backups", "mingyue-agent"},
+		{filepath.Dir(cfg.ShareMgr.StateFile), "share state", "mingyue-agent"},
 	}
 
-	var errors []string
+	var missingDirs []string
+	var permissionErrors []string
+
 	for _, dir := range requiredDirs {
 		// Check if directory exists
 		info, err := os.Stat(dir.path)
 		if err != nil {
 			if os.IsNotExist(err) {
-				errors = append(errors, fmt.Sprintf("  - %s: directory does not exist: %s", dir.description, dir.path))
+				missingDirs = append(missingDirs, dir.path)
 			} else {
-				errors = append(errors, fmt.Sprintf("  - %s: cannot access directory: %s (%v)", dir.description, dir.path, err))
+				permissionErrors = append(permissionErrors, fmt.Sprintf("cannot access %s: %v", dir.path, err))
 			}
 			continue
 		}
 
 		// Check if it's a directory
 		if !info.IsDir() {
-			errors = append(errors, fmt.Sprintf("  - %s: path exists but is not a directory: %s", dir.description, dir.path))
+			permissionErrors = append(permissionErrors, fmt.Sprintf("%s exists but is not a directory", dir.path))
 			continue
-		}
-
-		// Check if writable (try creating a temp file)
-		testFile := filepath.Join(dir.path, ".mingyue-agent-write-test")
-		if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
-			errors = append(errors, fmt.Sprintf("  - %s: directory is not writable: %s (%v)", dir.description, dir.path, err))
-		} else {
-			os.Remove(testFile)
 		}
 	}
 
-	if len(errors) > 0 {
-		return fmt.Errorf("Required directories are not accessible:\n%s\n\nPlease run the following commands to create and configure directories:\n  sudo mkdir -p /var/lib/mingyue-agent/share-backups\n  sudo chown -R mingyue-agent:mingyue-agent /var/lib/mingyue-agent\n  sudo chmod -R 755 /var/lib/mingyue-agent",
-			strings.Join(errors, "\n"))
+	if len(missingDirs) > 0 || len(permissionErrors) > 0 {
+		var msg strings.Builder
+		msg.WriteString("Required directories are not properly configured:\n")
+
+		if len(missingDirs) > 0 {
+			msg.WriteString("\nMissing directories:\n")
+			for _, dir := range missingDirs {
+				msg.WriteString(fmt.Sprintf("  - %s\n", dir))
+			}
+		}
+
+		if len(permissionErrors) > 0 {
+			msg.WriteString("\nPermission/Access errors:\n")
+			for _, errMsg := range permissionErrors {
+				msg.WriteString(fmt.Sprintf("  - %s\n", errMsg))
+			}
+		}
+
+		msg.WriteString("\n")
+		msg.WriteString("To fix these issues, run the following commands:\n\n")
+		msg.WriteString("  # Create directories if they don't exist\n")
+		msg.WriteString("  sudo mkdir -p /var/lib/mingyue-agent/share-backups\n")
+		msg.WriteString("  sudo mkdir -p /var/log/mingyue-agent\n")
+		msg.WriteString("  sudo mkdir -p /var/run/mingyue-agent\n\n")
+		msg.WriteString("  # Set correct ownership\n")
+		msg.WriteString("  sudo chown -R mingyue-agent:mingyue-agent /var/lib/mingyue-agent\n")
+		msg.WriteString("  sudo chown -R mingyue-agent:mingyue-agent /var/log/mingyue-agent\n")
+		msg.WriteString("  sudo chown -R mingyue-agent:mingyue-agent /var/run/mingyue-agent\n\n")
+		msg.WriteString("  # Set correct permissions\n")
+		msg.WriteString("  sudo chmod -R 755 /var/lib/mingyue-agent\n")
+		msg.WriteString("  sudo chmod -R 755 /var/log/mingyue-agent\n")
+		msg.WriteString("  sudo chmod -R 755 /var/run/mingyue-agent\n")
+
+		return fmt.Errorf(msg.String())
 	}
 
 	return nil
