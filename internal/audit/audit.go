@@ -41,13 +41,10 @@ func New(logPath string, remotePush bool, remoteURL string, enabled bool) (*Logg
 	l.pushChan = make(chan *Entry, 1000)
 
 	if logPath != "" {
-		// Try to create log directory, fallback to temp dir on read-only filesystem
+		// Ensure log directory exists
 		logDir := filepath.Dir(logPath)
 		if err := os.MkdirAll(logDir, 0755); err != nil {
-			logPath = filepath.Join(os.TempDir(), "mingyue-agent", filepath.Base(logPath))
-			if err := os.MkdirAll(filepath.Dir(logPath), 0755); err != nil {
-				return nil, fmt.Errorf("create log directory: %w", err)
-			}
+			return nil, fmt.Errorf("create log directory %s: %w", logDir, err)
 		}
 
 		f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)

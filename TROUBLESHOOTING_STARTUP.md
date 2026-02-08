@@ -41,9 +41,12 @@ cat /etc/mingyue-agent/config.yaml
 python3 -c "import yaml; yaml.safe_load(open('/etc/mingyue-agent/config.yaml'))" && echo "YAML syntax OK"
 ```
 
-### 4. 验证所有必需目录
+### 4. 修复权限并验证
 
 ```bash
+# 自动修复权限（推荐）
+sudo /usr/local/bin/mingyue-agent fix-permissions --config /etc/mingyue-agent/config.yaml
+
 # 运行验证脚本
 cd /path/to/mingyue-agent
 sudo ./scripts/verify-setup.sh
@@ -91,7 +94,10 @@ sudo chmod 644 /etc/mingyue-agent/config.yaml
 
 **解决方案**：
 ```bash
-# 重新设置所有权限
+# 自动修复（推荐）
+sudo /usr/local/bin/mingyue-agent fix-permissions --config /etc/mingyue-agent/config.yaml
+
+# 手动修复
 sudo mkdir -p /var/lib/mingyue-agent/share-backups
 sudo chown -R mingyue-agent:mingyue-agent /var/lib/mingyue-agent
 sudo chown -R mingyue-agent:mingyue-agent /var/log/mingyue-agent
@@ -99,6 +105,38 @@ sudo chown -R mingyue-agent:mingyue-agent /var/run/mingyue-agent
 sudo chmod -R 755 /var/lib/mingyue-agent
 sudo chmod -R 755 /var/log/mingyue-agent
 sudo chmod -R 755 /var/run/mingyue-agent
+```
+
+### 可选：将数据目录迁移到 /srv
+
+如果 `/etc` 或 `/var` 权限限制较多，可以将业务数据目录移动到 `/srv`：
+
+```bash
+# 1. 创建新目录
+sudo mkdir -p /srv/mingyue-agent/share-backups
+sudo chown -R mingyue-agent:mingyue-agent /srv/mingyue-agent
+sudo chmod -R 755 /srv/mingyue-agent
+
+# 2. 修改配置文件
+sudo vi /etc/mingyue-agent/config.yaml
+# 修改以下路径：
+# netdisk.state_file: /srv/mingyue-agent/netdisk-state.json
+# network.history_file: /srv/mingyue-agent/network-history.json
+# sharemgr.backup_dir: /srv/mingyue-agent/share-backups
+# sharemgr.state_file: /srv/mingyue-agent/share-state.json
+# audit.log_path: /srv/mingyue-agent/audit.log
+
+# 3. 更新 systemd 允许写入路径
+sudo systemctl edit mingyue-agent
+# 添加以下内容：
+# [Service]
+# ReadWritePaths=/srv/mingyue-agent
+
+# 4. 修复权限
+sudo /usr/local/bin/mingyue-agent fix-permissions --config /etc/mingyue-agent/config.yaml
+
+# 5. 重启服务
+sudo systemctl restart mingyue-agent
 ```
 
 ### 问题 3：端口已被占用

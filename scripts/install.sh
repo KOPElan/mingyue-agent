@@ -84,6 +84,11 @@ create_directories() {
     chown -R "$USER:$GROUP" "$RUN_DIR"
     chown -R "$USER:$GROUP" "$DATA_DIR"
     
+    # Create log files
+    touch "$LOG_DIR/agent.log" "$LOG_DIR/audit.log"
+    chown "$USER:$GROUP" "$LOG_DIR/agent.log" "$LOG_DIR/audit.log"
+    chmod 644 "$LOG_DIR/agent.log" "$LOG_DIR/audit.log"
+
     # Set permissions
     chmod 755 "$CONFIG_DIR"
     chmod 755 "$LOG_DIR"
@@ -224,6 +229,11 @@ verify_installation() {
         "$DATA_DIR:Data directory"
         "$DATA_DIR/share-backups:Share backups directory"
     )
+
+    local log_files=(
+        "$LOG_DIR/agent.log:Agent log file"
+        "$LOG_DIR/audit.log:Audit log file"
+    )
     
     for dir_info in "${dirs[@]}"; do
         IFS=':' read -r dir desc <<< "$dir_info"
@@ -238,6 +248,20 @@ verify_installation() {
         else
             log_error "✗ $desc does not exist: $dir"
             all_ok=false
+        fi
+    done
+
+    for file_info in "${log_files[@]}"; do
+        IFS=':' read -r file desc <<< "$file_info"
+        if [[ -f "$file" ]]; then
+            if [[ -w "$file" ]] || sudo -u "$USER" test -w "$file" 2>/dev/null; then
+                log_info "✓ $desc exists and is writable"
+            else
+                log_error "✗ $desc exists but is not writable by user $USER: $file"
+                all_ok=false
+            fi
+        else
+            log_warn "⚠ $desc does not exist yet: $file"
         fi
     done
     

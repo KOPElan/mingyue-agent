@@ -23,76 +23,86 @@ type Daemon struct {
 
 // verifyDirectories checks if all required directories exist and have correct permissions
 func verifyDirectories(cfg *config.Config) error {
-	requiredDirs := []struct {
+	type dirCheck struct {
 		path        string
 		description string
-		owner       string // "root" or "mingyue-agent"
-	}{
-		{filepath.Dir(cfg.NetDisk.StateFile), "network disk state", "mingyue-agent"},
-		{filepath.Dir(cfg.Network.HistoryFile), "network history", "mingyue-agent"},
-		{cfg.ShareMgr.BackupDir, "share backups", "mingyue-agent"},
-		{filepath.Dir(cfg.ShareMgr.StateFile), "share state", "mingyue-agent"},
 	}
 
-	var missingDirs []string
-	var permissionErrors []string
+	logDir := agentLogDir(cfg)
+	requiredDirs := []dirCheck{
+		{filepath.Dir(cfg.NetDisk.StateFile), "network disk state"},
+		{filepath.Dir(cfg.Network.HistoryFile), "network history"},
+		{cfg.ShareMgr.BackupDir, "share backups"},
+		{filepath.Dir(cfg.ShareMgr.StateFile), "share state"},
+		{filepath.Dir(cfg.Server.UDSPath), "unix socket"},
+		{logDir, "agent log"},
+	}
 
+	if cfg.Audit.Enabled && cfg.Audit.LogPath != "" {
+		requiredDirs = append(requiredDirs, dirCheck{
+			path:        filepath.Dir(cfg.Audit.LogPath),
+			description: "audit log",
+		})
+	}
+
+	var errors []string
 	for _, dir := range requiredDirs {
-		// Check if directory exists
-		info, err := os.Stat(dir.path)
-		if err != nil {
-			if os.IsNotExist(err) {
-				missingDirs = append(missingDirs, dir.path)
-			} else {
-				permissionErrors = append(permissionErrors, fmt.Sprintf("cannot access %s: %v", dir.path, err))
-			}
-			continue
-		}
-
-		// Check if it's a directory
-		if !info.IsDir() {
-			permissionErrors = append(permissionErrors, fmt.Sprintf("%s exists but is not a directory", dir.path))
-			continue
+		if err := ensureWritableDir(dir.path); err != nil {
+			errors = append(errors, fmt.Sprintf("  - %s: %v", dir.description, err))
 		}
 	}
 
-	if len(missingDirs) > 0 || len(permissionErrors) > 0 {
-		var msg strings.Builder
-		msg.WriteString("Required directories are not properly configured:\n")
-
-		if len(missingDirs) > 0 {
-			msg.WriteString("\nMissing directories:\n")
-			for _, dir := range missingDirs {
-				msg.WriteString(fmt.Sprintf("  - %s\n", dir))
-			}
+	if cfg.Audit.Enabled && cfg.Audit.LogPath != "" {
+		if err := ensureWritableFile(cfg.Audit.LogPath); err != nil {
+			errors = append(errors, fmt.Sprintf("  - audit log file: %v", err))
 		}
+	}
 
-		if len(permissionErrors) > 0 {
-			msg.WriteString("\nPermission/Access errors:\n")
-			for _, errMsg := range permissionErrors {
-				msg.WriteString(fmt.Sprintf("  - %s\n", errMsg))
-			}
-		}
-
-		msg.WriteString("\n")
-		msg.WriteString("To fix these issues, run the following commands:\n\n")
-		msg.WriteString("  # Create directories if they don't exist\n")
-		msg.WriteString("  sudo mkdir -p /var/lib/mingyue-agent/share-backups\n")
-		msg.WriteString("  sudo mkdir -p /var/log/mingyue-agent\n")
-		msg.WriteString("  sudo mkdir -p /var/run/mingyue-agent\n\n")
-		msg.WriteString("  # Set correct ownership\n")
-		msg.WriteString("  sudo chown -R mingyue-agent:mingyue-agent /var/lib/mingyue-agent\n")
-		msg.WriteString("  sudo chown -R mingyue-agent:mingyue-agent /var/log/mingyue-agent\n")
-		msg.WriteString("  sudo chown -R mingyue-agent:mingyue-agent /var/run/mingyue-agent\n\n")
-		msg.WriteString("  # Set correct permissions\n")
-		msg.WriteString("  sudo chmod -R 755 /var/lib/mingyue-agent\n")
-		msg.WriteString("  sudo chmod -R 755 /var/log/mingyue-agent\n")
-		msg.WriteString("  sudo chmod -R 755 /var/run/mingyue-agent\n")
-
-		return fmt.Errorf(msg.String())
+	if len(errors) > 0 {
+		return fmt.Errorf("Required directories are not accessible:\n%s\n\nFix by running:\n  sudo mingyue-agent fix-permissions --config /etc/mingyue-agent/config.yaml", strings.Join(errors, "\n"))
 	}
 
 	return nil
+}
+
+func ensureWritableDir(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("directory does not exist: %s", path)
+		}
+		return fmt.Errorf("cannot access directory: %s (%v)", path, err)
+	}
+
+	if !info.IsDir() {
+		return fmt.Errorf("path exists but is not a directory: %s", path)
+	}
+
+	testFile := filepath.Join(path, ".mingyue-agent-write-test")
+	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+		return fmt.Errorf("directory is not writable: %s (%v)", path, err)
+	}
+
+	if err := os.Remove(testFile); err != nil {
+		return fmt.Errorf("remove write test file: %s (%v)", path, err)
+	}
+
+	return nil
+}
+
+func ensureWritableFile(path string) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return fmt.Errorf("cannot open log file: %s (%v)", path, err)
+	}
+	return file.Close()
+}
+
+func agentLogDir(cfg *config.Config) string {
+	if cfg.Audit.Enabled && cfg.Audit.LogPath != "" {
+		return filepath.Dir(cfg.Audit.LogPath)
+	}
+	return "/var/log/mingyue-agent"
 }
 
 func New(cfg *config.Config) (*Daemon, error) {
@@ -101,12 +111,9 @@ func New(cfg *config.Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	logDir := "/var/log/mingyue-agent"
+	logDir := agentLogDir(cfg)
 	if err := os.MkdirAll(logDir, 0755); err != nil {
-		logDir = filepath.Join(os.TempDir(), "mingyue-agent")
-		if err := os.MkdirAll(logDir, 0755); err != nil {
-			return nil, fmt.Errorf("create log directory: %w", err)
-		}
+		return nil, fmt.Errorf("create log directory %s: %w", logDir, err)
 	}
 
 	auditLogger, err := audit.New(

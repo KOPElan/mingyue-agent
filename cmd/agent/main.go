@@ -84,6 +84,7 @@ local privileged operations capabilities.`,
 	rootCmd.AddCommand(indexerCmd())
 	rootCmd.AddCommand(schedulerCmd())
 	rootCmd.AddCommand(authCmd())
+	rootCmd.AddCommand(fixPermissionsCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)

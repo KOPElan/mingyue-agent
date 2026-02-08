@@ -99,6 +99,30 @@ check_file() {
     return 0
 }
 
+check_writable_file() {
+    local file="$1"
+    local desc="$2"
+    local required="${3:-false}"
+
+    if [[ ! -f "$file" ]]; then
+        if [[ "$required" == "true" ]]; then
+            log_error "$desc does not exist: $file"
+            return 1
+        fi
+        log_warn "$desc does not exist yet: $file"
+        return 0
+    fi
+
+    if sudo -u "$USER" test -w "$file" 2>/dev/null; then
+        log_success "$desc is writable - $file"
+        return 0
+    fi
+
+    log_error "$desc is not writable by $USER: $file"
+    echo "         Fix with: sudo chown $USER:$GROUP $file && sudo chmod 644 $file"
+    return 1
+}
+
 check_user() {
     if id "$USER" &>/dev/null; then
         log_success "User '$USER' exists"
@@ -191,6 +215,11 @@ main() {
     
     log_info "Checking application-specific directories..."
     check_directory "$DATA_DIR/share-backups" "Share backups directory" "$USER:$GROUP" true || all_ok=false
+    echo ""
+
+    log_info "Checking log files..."
+    check_writable_file "$LOG_DIR/agent.log" "Agent log file" false || all_ok=false
+    check_writable_file "$LOG_DIR/audit.log" "Audit log file" false || all_ok=false
     echo ""
     
     log_info "Checking configuration files..."
