@@ -39,7 +39,6 @@ netdisk:
 network:
   management_interface: ""
   history_file: "/var/lib/mingyue-agent/network-history.json"
-  config_dir: "/etc/mingyue-agent/network"
 
 sharemgr:
   allowed_paths:

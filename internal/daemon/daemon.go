@@ -31,7 +31,6 @@ func verifyDirectories(cfg *config.Config) error {
 		{filepath.Dir(cfg.Network.HistoryFile), "network history"},
 		{cfg.ShareMgr.BackupDir, "share backups"},
 		{filepath.Dir(cfg.ShareMgr.StateFile), "share state"},
-		{cfg.Network.ConfigDir, "network config"},
 	}
 
 	var errors []string
@@ -63,7 +62,7 @@ func verifyDirectories(cfg *config.Config) error {
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf("Required directories are not accessible:\n%s\n\nPlease run the following commands to create and configure directories:\n  sudo mkdir -p /var/lib/mingyue-agent/share-backups\n  sudo mkdir -p /etc/mingyue-agent/network\n  sudo chown -R mingyue-agent:mingyue-agent /var/lib/mingyue-agent\n  sudo chmod -R 755 /var/lib/mingyue-agent",
+		return fmt.Errorf("Required directories are not accessible:\n%s\n\nPlease run the following commands to create and configure directories:\n  sudo mkdir -p /var/lib/mingyue-agent/share-backups\n  sudo chown -R mingyue-agent:mingyue-agent /var/lib/mingyue-agent\n  sudo chmod -R 755 /var/lib/mingyue-agent",
 			strings.Join(errors, "\n"))
 	}
 

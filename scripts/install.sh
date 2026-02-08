@@ -78,7 +78,6 @@ create_directories() {
     # Create application-specific data directories
     log_info "Creating application data directories..."
     mkdir -p "$DATA_DIR/share-backups"
-    mkdir -p "$CONFIG_DIR/network"
 
     # Set ownership
     chown -R "$USER:$GROUP" "$LOG_DIR"
@@ -91,7 +90,6 @@ create_directories() {
     chmod 755 "$RUN_DIR"
     chmod 755 "$DATA_DIR"
     chmod 755 "$DATA_DIR/share-backups"
-    chmod 755 "$CONFIG_DIR/network"
     
     log_info "Directory structure created:"
     log_info "  Config: $CONFIG_DIR"
@@ -99,7 +97,6 @@ create_directories() {
     log_info "  Run:    $RUN_DIR"
     log_info "  Data:   $DATA_DIR"
     log_info "  - Share backups: $DATA_DIR/share-backups"
-    log_info "  - Network config: $CONFIG_DIR/network"
 }
 
 install_binary() {

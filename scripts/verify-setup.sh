@@ -191,7 +191,6 @@ main() {
     
     log_info "Checking application-specific directories..."
     check_directory "$DATA_DIR/share-backups" "Share backups directory" "$USER:$GROUP" true || all_ok=false
-    check_directory "$CONFIG_DIR/network" "Network config directory" "root:root" true || all_ok=false
     echo ""
     
     log_info "Checking configuration files..."
@@ -217,7 +216,7 @@ main() {
         log_error "Some checks failed. Please review the errors above and fix them."
         echo ""
         echo "Quick fix commands:"
-        echo "  sudo mkdir -p $DATA_DIR/share-backups $CONFIG_DIR/network"
+        echo "  sudo mkdir -p $DATA_DIR/share-backups"
         echo "  sudo chown -R $USER:$GROUP $LOG_DIR $RUN_DIR $DATA_DIR"
         echo "  sudo chmod -R 755 $LOG_DIR $RUN_DIR $DATA_DIR"
         exit 1

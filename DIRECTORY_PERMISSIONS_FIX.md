@@ -8,12 +8,21 @@ Error: failed to create daemon: create server: create share manager: create back
 mkdir /var/lib/mingyue-agent: read-only file system
 ```
 
+以及后续的：
+```
+Error: failed to create daemon: Required directories are not accessible:
+  - network config: directory is not writable: /etc/mingyue-agent/network (read-only file system)
+```
+
 ## 根本原因
 
 1. **Systemd 安全配置**: 服务使用 `ProtectSystem=strict`，使整个文件系统只读
 2. **缺少必需目录**: `/var/lib/mingyue-agent` 及其子目录未创建
 3. **权限配置错误**: 即使目录存在，也可能没有正确的所有者和权限
-4. **错误的设计思路**: 最初的回退机制将业务数据存储到临时目录，这会导致数据在系统重启后丢失
+4. **错误的设计思路**: 
+   - 最初的回退机制将业务数据存储到临时目录，这会导致数据在系统重启后丢失
+   - `/etc/mingyue-agent/network` 目录被配置为需要写入，但这违反了 `/etc` 只读的原则
+   - 实际上 `netmanager` 的 `ConfigDir` 字段从未被使用，这是一个冗余配置
 
 ## 解决方案
 
@@ -22,6 +31,11 @@ mkdir /var/lib/mingyue-agent: read-only file system
 #### 移除不当的回退机制
 - ❌ **之前**: 失败时回退到 `/tmp` 或用户主目录
 - ✅ **现在**: 明确报错，提供清晰的修复指引
+
+#### 移除未使用的配置项
+- 从 `netmanager` 中移除了从未使用的 `ConfigDir` 字段
+- 移除了对 `/etc/mingyue-agent/network` 目录的创建和验证
+- 简化了配置文件结构
 
 #### 添加启动前预检查
 在 `internal/daemon/daemon.go` 中添加了 `verifyDirectories()` 函数：
@@ -75,22 +89,13 @@ chmod -R 755 /var/lib/mingyue-agent
 
 ```
 /etc/mingyue-agent/              # 配置文件 (root:root, 755)
-├── config.yaml                  # 主配置文件 (644)
-└── network/                     # 网络配置存储 (root:root, 755)
+└── config.yaml                  # 主配置文件 (644)
 
 /var/log/mingyue-agent/          # 日志文件 (mingyue-agent:mingyue-agent, 755)
-├── agent.log                    # 主应用日志
-└── audit.log                    # 审计日志
 
 /var/run/mingyue-agent/          # 运行时文件 (mingyue-agent:mingyue-agent, 755)
-└── agent.sock                   # Unix domain socket
 
 /var/lib/mingyue-agent/          # 应用数据 (mingyue-agent:mingyue-agent, 755)
-├── auth.db                      # 认证数据库
-├── scheduler.db                 # 调度器数据库
-├── netdisk-state.json          # 网络磁盘状态
-├── network-history.json        # 网络配置历史
-├── share-state.json            # 共享管理状态
 └── share-backups/              # 共享配置备份 (755)
 ```
 
@@ -103,7 +108,6 @@ chmod -R 755 /var/lib/mingyue-agent
 ```bash
 # 1. 创建所有必需的目录
 sudo mkdir -p /var/lib/mingyue-agent/share-backups
-sudo mkdir -p /etc/mingyue-agent/network
 sudo mkdir -p /var/log/mingyue-agent
 sudo mkdir -p /var/run/mingyue-agent
 
@@ -151,36 +155,60 @@ sudo ./scripts/verify-setup.sh
 
 ## 代码变更清单
 
-### 修改的文件
+   - 移除对 `/etc/mingyue-agent/network` 的验证
 
-1. **internal/daemon/daemon.go**
-   - 添加 `verifyDirectories()` 函数
-   - 在创建 daemon 前验证所有必需目录
+2. **internal/netmanager/netmanager.go**
+   - 移除未使用的 `configDir` 字段
+   - 移除 `Config.ConfigDir` 字段
+   - 简化 `New()` 函数
 
-2. **internal/sharemanager/sharemanager.go**
+3. **internal/config/config.go**
+   - 从 `NetworkConfig` 移除 `ConfigDir` 字段
+   - 更新默认配置
+
+4. **internal/server/server.go**
+   - 移除创建 netmanager 时的 ConfigDir 参数
+
+5. **internal/sharemanager/sharemanager.go**
    - 移除回退到临时目录的逻辑
    - 添加清晰的错误信息
 
-3. **internal/netdisk/netdisk.go**
+6. **internal/netdisk/netdisk.go**
    - 改进 `saveState()` 错误处理
    - 添加清晰的错误信息
 
-4. **internal/netmanager/netmanager.go**
+7. **internal/netmanager/netmanager.go**
    - 改进 `saveHistory()` 错误处理
    - 添加清晰的错误信息
 
-5. **internal/auth/auth.go**
+8. **internal/auth/auth.go**
    - 移除回退机制
    - 添加清晰的错误信息
 
-6. **internal/scheduler/scheduler.go**
+9. **internal/scheduler/scheduler.go**
    - 移除回退机制
    - 添加清晰的错误信息
 
-7. **scripts/install.sh**
-   - 改进 `create_directories()` 函数
-   - 添加 `verify_installation()` 函数
-   - 创建所有必需的子目录
+10. **config.example.yaml**
+    - 移除 `network.config_dir` 配置项
+
+11. **scripts/install.sh**
+    - 改进 `create_directories()` 函数
+    - 添加 `verify_installation()` 函数
+    - 创建所有必需的子目录
+    - 移除对 `/et
+
+2. **DIRECTORY_PERMISSIONS_FIX.md** (本文件)
+   - 问题分析和修复总结c/mingyue-agent/network` 的创建
+
+12. **scripts/verify-setup.sh**
+    - 移除对 `/etc/mingyue-agent/network` 的检查
+
+13. **docs/DEPLOYMENT.md**
+    - 添加"目录结构和权限"章节
+    - 扩展故障排查章节
+    - 添加验证说明
+    - 移除对 `/etc/mingyue-agent/network` 的引用的子目录
 
 8. **docs/DEPLOYMENT.md**
    - 添加"目录结构和权限"章节

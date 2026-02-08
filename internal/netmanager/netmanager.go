@@ -65,7 +65,6 @@ type PortInfo struct {
 type Manager struct {
 	managementInterface string
 	historyFile         string
-	configDir           string
 	history             []ConfigHistory
 	mu                  sync.RWMutex
 }
@@ -74,7 +73,6 @@ type Manager struct {
 type Config struct {
 	ManagementInterface string
 	HistoryFile         string
-	ConfigDir           string
 }
 
 // New creates a new network manager
@@ -84,15 +82,9 @@ func New(cfg *Config) (*Manager, error) {
 		historyFile = "/var/lib/mingyue-agent/network-history.json"
 	}
 
-	configDir := cfg.ConfigDir
-	if configDir == "" {
-		configDir = "/etc/mingyue-agent/network"
-	}
-
 	m := &Manager{
 		managementInterface: cfg.ManagementInterface,
 		historyFile:         historyFile,
-		configDir:           configDir,
 		history:             []ConfigHistory{},
 	}
 

@@ -75,7 +75,6 @@ func New(cfg *config.Config, auditLogger *audit.Logger) (*Server, error) {
 		netMgr, err := netmanager.New(&netmanager.Config{
 			ManagementInterface: cfg.Network.ManagementInterface,
 			HistoryFile:         cfg.Network.HistoryFile,
-			ConfigDir:           cfg.Network.ConfigDir,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("create network manager: %w", err)

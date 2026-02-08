@@ -23,8 +23,7 @@ Mingyue Agent requires the following directories with specific permissions:
 
 ```
 /etc/mingyue-agent/              # Configuration files (owner: root:root, mode: 755)
-├── config.yaml                  # Main configuration (mode: 644)
-└── network/                     # Network configuration storage (owner: root:root, mode: 755)
+└── config.yaml                  # Main configuration (mode: 644)
 
 /var/log/mingyue-agent/          # Log files (owner: mingyue-agent:mingyue-agent, mode: 755)
 ├── agent.log                    # Main application log
@@ -48,7 +47,7 @@ Use the following command to create all required directories with correct permis
 
 ```bash
 # Create directories
-sudo mkdir -p /etc/mingyue-agent/network
+sudo mkdir -p /etc/mingyue-agent
 sudo mkdir -p /var/log/mingyue-agent
 sudo mkdir -p /var/run/mingyue-agent
 sudo mkdir -p /var/lib/mingyue-agent/share-backups
@@ -412,7 +411,6 @@ This indicates that required directories don't exist or are not writable. Fix wi
 ```bash
 # Create all required directories
 sudo mkdir -p /var/lib/mingyue-agent/share-backups
-sudo mkdir -p /etc/mingyue-agent/network
 sudo mkdir -p /var/log/mingyue-agent
 sudo mkdir -p /var/run/mingyue-agent
 

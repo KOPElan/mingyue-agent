@@ -58,7 +58,6 @@ type NetDiskConfig struct {
 type NetworkConfig struct {
 	ManagementInterface string `yaml:"management_interface"`
 	HistoryFile         string `yaml:"history_file"`
-	ConfigDir           string `yaml:"config_dir"`
 }
 
 type ShareMgrConfig struct {
@@ -130,7 +129,6 @@ func defaultConfig() *Config {
 		Network: NetworkConfig{
 			ManagementInterface: "",
 			HistoryFile:         "/var/lib/mingyue-agent/network-history.json",
-			ConfigDir:           "/etc/mingyue-agent/network",
 		},
 		ShareMgr: ShareMgrConfig{
 			AllowedPaths: []string{"/home", "/data", "/mnt", "/media"},
