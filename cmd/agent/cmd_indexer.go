@@ -134,8 +134,8 @@ func indexerStatsCmd() *cobra.Command {
 			}
 
 			var stats struct {
-				TotalFiles int   `json:"total_files"`
-				TotalSize  int64 `json:"total_size"`
+				TotalFiles int    `json:"total_files"`
+				TotalSize  int64  `json:"total_size"`
 				LastScan   string `json:"last_scan"`
 			}
 
