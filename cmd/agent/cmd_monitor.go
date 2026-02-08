@@ -34,25 +34,25 @@ func monitorStatsCmd() *cobra.Command {
 
 			var stats struct {
 				CPU struct {
-					Cores      int     `json:"cores"`
-					UsagePC    float64 `json:"usage_percent"`
-					LoadAvg1   float64 `json:"load_avg_1"`
-					LoadAvg5   float64 `json:"load_avg_5"`
-					LoadAvg15  float64 `json:"load_avg_15"`
+					Cores     int     `json:"cores"`
+					UsagePC   float64 `json:"usage_percent"`
+					LoadAvg1  float64 `json:"load_avg_1"`
+					LoadAvg5  float64 `json:"load_avg_5"`
+					LoadAvg15 float64 `json:"load_avg_15"`
 				} `json:"cpu"`
 				Memory struct {
-					Total      int64   `json:"total"`
-					Available  int64   `json:"available"`
-					Used       int64   `json:"used"`
-					UsedPC     float64 `json:"used_percent"`
-					SwapTotal  int64   `json:"swap_total"`
-					SwapUsed   int64   `json:"swap_used"`
+					Total     int64   `json:"total"`
+					Available int64   `json:"available"`
+					Used      int64   `json:"used"`
+					UsedPC    float64 `json:"used_percent"`
+					SwapTotal int64   `json:"swap_total"`
+					SwapUsed  int64   `json:"swap_used"`
 				} `json:"memory"`
 				Disk struct {
-					Total    int64   `json:"total"`
-					Free     int64   `json:"free"`
-					Used     int64   `json:"used"`
-					UsedPC   float64 `json:"used_percent"`
+					Total  int64   `json:"total"`
+					Free   int64   `json:"free"`
+					Used   int64   `json:"used"`
+					UsedPC float64 `json:"used_percent"`
 				} `json:"disk"`
 				Process struct {
 					PID        int   `json:"pid"`
