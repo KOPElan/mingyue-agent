@@ -96,6 +96,16 @@ func New(cfg *Config) (*Manager, error) {
 		monitorInterval = 1 * time.Minute
 	}
 
+	// Create backup directory with fallback to temp dir on read-only filesystem
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		backupDir = filepath.Join(os.TempDir(), "mingyue-agent", "share-backups")
+		if err := os.MkdirAll(backupDir, 0755); err != nil {
+			return nil, fmt.Errorf("create backup directory: %w", err)
+		}
+		// Also update state file to use temp directory
+		stateFile = filepath.Join(os.TempDir(), "mingyue-agent", "share-state.json")
+	}
+
 	m := &Manager{
 		shares:          make(map[string]*Share),
 		allowedPaths:    cfg.AllowedPaths,
@@ -105,11 +115,6 @@ func New(cfg *Config) (*Manager, error) {
 		stateFile:       stateFile,
 		monitorInterval: monitorInterval,
 		stopMonitor:     make(chan struct{}),
-	}
-
-	// Create backup directory
-	if err := os.MkdirAll(backupDir, 0755); err != nil {
-		return nil, fmt.Errorf("create backup directory: %w", err)
 	}
 
 	// Load persisted state

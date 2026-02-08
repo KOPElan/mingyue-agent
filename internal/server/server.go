@@ -148,8 +148,13 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	if s.config.API.EnableUDS {
-		if err := os.MkdirAll(filepath.Dir(s.config.Server.UDSPath), 0755); err != nil {
-			return fmt.Errorf("create UDS directory: %w", err)
+		// Try to create UDS directory, fallback to temp dir on read-only filesystem
+		udsDir := filepath.Dir(s.config.Server.UDSPath)
+		if err := os.MkdirAll(udsDir, 0755); err != nil {
+			s.config.Server.UDSPath = filepath.Join(os.TempDir(), "mingyue-agent", filepath.Base(s.config.Server.UDSPath))
+			if err := os.MkdirAll(filepath.Dir(s.config.Server.UDSPath), 0755); err != nil {
+				return fmt.Errorf("create UDS directory: %w", err)
+			}
 		}
 
 		os.Remove(s.config.Server.UDSPath)

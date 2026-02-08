@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -66,6 +68,15 @@ func New(config Config) (*Scheduler, error) {
 	}
 	if config.SyncInterval == 0 {
 		config.SyncInterval = 5 * time.Minute
+	}
+
+	// Try to create DB directory, fallback to temp dir on read-only filesystem
+	dbDir := filepath.Dir(config.DBPath)
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		config.DBPath = filepath.Join(os.TempDir(), "mingyue-agent", filepath.Base(config.DBPath))
+		if err := os.MkdirAll(filepath.Dir(config.DBPath), 0755); err != nil {
+			return nil, fmt.Errorf("create database directory: %w", err)
+		}
 	}
 
 	db, err := sql.Open("sqlite3", config.DBPath)
