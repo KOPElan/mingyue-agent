@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"text/tabwriter"
 	"time"
@@ -36,7 +37,7 @@ func filesListCmd() *cobra.Command {
 			client := getAPIClient()
 			path := args[0]
 
-			resp, err := client.Get(fmt.Sprintf("/api/v1/files/list?path=%s", path))
+			resp, err := client.Get(fmt.Sprintf("/api/v1/files/list?path=%s", url.QueryEscape(path)))
 			if err != nil {
 				return err
 			}
@@ -83,7 +84,7 @@ func filesInfoCmd() *cobra.Command {
 			client := getAPIClient()
 			path := args[0]
 
-			resp, err := client.Get(fmt.Sprintf("/api/v1/files/info?path=%s", path))
+			resp, err := client.Get(fmt.Sprintf("/api/v1/files/info?path=%s", url.QueryEscape(path)))
 			if err != nil {
 				return err
 			}

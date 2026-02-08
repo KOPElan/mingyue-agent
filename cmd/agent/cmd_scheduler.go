@@ -155,7 +155,9 @@ func schedulerExecuteCmd() *cobra.Command {
 			client := getAPIClient()
 			taskID := args[0]
 
-			_, err := client.Post(fmt.Sprintf("/api/v1/scheduler/tasks/execute?id=%s", taskID), nil)
+			_, err := client.Post("/api/v1/scheduler/tasks/execute", map[string]string{
+				"id": taskID,
+			})
 			if err != nil {
 				return err
 			}

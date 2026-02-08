@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"text/tabwriter"
 
@@ -81,7 +82,7 @@ func indexerSearchCmd() *cobra.Command {
 			client := getAPIClient()
 			query := args[0]
 
-			resp, err := client.Get(fmt.Sprintf("/api/v1/indexer/search?q=%s&limit=%d", query, limit))
+			resp, err := client.Get(fmt.Sprintf("/api/v1/indexer/search?q=%s&limit=%d", url.QueryEscape(query), limit))
 			if err != nil {
 				return err
 			}

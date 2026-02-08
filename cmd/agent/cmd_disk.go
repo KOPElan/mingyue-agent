@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"text/tabwriter"
 
@@ -116,7 +117,7 @@ func diskSmartCmd() *cobra.Command {
 			client := getAPIClient()
 			device := args[0]
 
-			resp, err := client.Get(fmt.Sprintf("/api/v1/disk/smart?device=%s", device))
+			resp, err := client.Get(fmt.Sprintf("/api/v1/disk/smart?device=%s", url.QueryEscape(device)))
 			if err != nil {
 				return err
 			}
