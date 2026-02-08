@@ -66,6 +66,7 @@ func apiCmd() *cobra.Command {
 
 This is useful for local debugging to observe raw handler behavior without the full daemon.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			var err error
 			var cfg *config.Config
 			if localMode {
 				localCfg, _, err := loadLocalConfig()

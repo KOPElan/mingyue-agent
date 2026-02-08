@@ -99,7 +99,9 @@ func authTokenCreateCmd() *cobra.Command {
 }
 
 func authTokenListCmd() *cobra.Command {
-	return &cobra.Command{
+	var userID string
+
+	cmd := &cobra.Command{
 		Use:   "token-list",
 		Short: "List all API tokens",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -166,6 +168,10 @@ func authTokenListCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVarP(&userID, "user", "u", "admin", "User ID")
+
+	return cmd
 }
 
 func authTokenRevokeCmd() *cobra.Command {
